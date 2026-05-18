@@ -1,0 +1,16 @@
+import MapView from '../components/map/MapView'
+import { properties } from '../data/mockData'
+
+export default function Dashboard() {
+  return (
+    <div className="p-8" style={{ height: 'calc(100vh - 82px)' }}>
+      <MapView
+        center={[45.093, 7.685]}
+        zoom={15}
+        markers={properties}
+        markerType="house"
+        height="100%"
+      />
+    </div>
+  )
+}
