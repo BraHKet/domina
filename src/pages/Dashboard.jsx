@@ -1,7 +1,11 @@
 import MapView from '../components/map/MapView'
-import { properties } from '../data/mockData'
+import { useProperties } from '../hooks/useProperties'
 
 export default function Dashboard() {
+  const { properties, loading } = useProperties()
+
+  if (loading) return <div className="p-8 text-gray-400">Caricamento mappa...</div>
+
   return (
     <div className="p-8" style={{ height: 'calc(100vh - 82px)' }}>
       <MapView

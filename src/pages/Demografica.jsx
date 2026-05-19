@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import MapView from '../components/map/MapView'
-import { defaultSelected, demograficaData as d } from '../data/mockData'
+import { demograficaData as d } from '../data/mockData'
 
 export default function Demografica() {
   return (

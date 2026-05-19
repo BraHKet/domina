@@ -1,6 +1,6 @@
 import { BarChart2, TrendingUp, TrendingDown } from 'lucide-react'
 import MapView from '../components/map/MapView'
-import { defaultSelected, acquirenteData as a } from '../data/mockData'
+import { acquirenteData as a } from '../data/mockData'
 
 export default function Acquirente() {
   return (
