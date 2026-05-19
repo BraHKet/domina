@@ -11,7 +11,7 @@ export default function Dashboard() {
       <MapView
         center={[45.093, 7.685]}
         zoom={15}
-        markers={properties}
+        markers={properties.filter(p => p.score !== null && p.score >= 60)}
         markerType="house"
         height="100%"
       />

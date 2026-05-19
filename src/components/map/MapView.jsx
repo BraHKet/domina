@@ -3,15 +3,15 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 
 // Icons defined at module level to avoid recreation on every render
 const houseIcon = L.divIcon({
-  html: `<div style="width:40px;height:40px;background:#F59E0B;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.25);">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+  html: `<div style="width:28px;height:28px;background:#F59E0B;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
       <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
     </svg>
   </div>`,
   className: '',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -22],
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  popupAnchor: [0, -16],
 })
 
 const greenDotIcon = L.divIcon({
@@ -40,60 +40,52 @@ const yellowDotIcon = L.divIcon({
 
 function PopupContent({ property }) {
   return (
-    <div style={{ padding: '12px', minWidth: '210px' }}>
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '10px' }}>
-        <div
-          style={{
-            width: '58px',
-            height: '46px',
-            borderRadius: '7px',
-            background: '#374151',
-            flexShrink: 0,
-            overflow: 'hidden',
-          }}
-        >
-          <img
-            src={`https://picsum.photos/seed/${property.id}map/58/46`}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={(e) => { e.target.style.display = 'none' }}
-          />
+    <div style={{ padding: '10px', minWidth: '180px', maxWidth: '200px' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+        <div style={{
+          width: '44px', height: '36px', borderRadius: '6px',
+          background: '#374151', flexShrink: 0, overflow: 'hidden',
+        }}>
+          {property.imageUrl
+            ? <img src={property.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none' }} />
+            : <div style={{ width: '100%', height: '100%', background: '#374151' }} />
+          }
         </div>
-        <p style={{ color: 'white', fontWeight: '700', fontSize: '13px', lineHeight: '1.4', margin: 0 }}>
-          {property.address}
-        </p>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '10px' }}>
         <div>
-          <p style={{ color: '#9CA3AF', fontSize: '10px', margin: '0 0 2px 0' }}>Square</p>
-          <p style={{ color: 'white', fontSize: '13px', fontWeight: '600', margin: 0 }}>{property.size} m²</p>
+          <p style={{ color: '#9CA3AF', fontSize: '10px', margin: '0 0 1px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+            {property.address}
+          </p>
+          <p style={{ color: '#F59E0B', fontWeight: '700', fontSize: '14px', margin: 0 }}>
+            €{property.price?.toLocaleString('it-IT')}
+          </p>
         </div>
-        {property.financing && (
-          <div>
-            <p style={{ color: '#9CA3AF', fontSize: '10px', margin: '0 0 2px 0' }}>Financing</p>
-            <p style={{ color: 'white', fontSize: '13px', fontWeight: '600', margin: 0 }}>
-              €{(property.financing / 1000).toFixed(1)}K
-            </p>
-          </div>
-        )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ flex: 1, height: '6px', background: '#374151', borderRadius: '3px' }}>
-          <div
-            style={{
-              width: `${(property.score / 10) * 100}%`,
-              height: '100%',
-              background: '#22C55E',
-              borderRadius: '3px',
-            }}
-          />
-        </div>
-        <span style={{ color: '#22C55E', fontWeight: '700', fontSize: '14px' }}>
-          {property.score}/10
-        </span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+        {[
+          { label: 'Superficie', value: property.size ? `${property.size} m²` : '—' },
+          { label: 'Locali', value: property.rooms ?? '—' },
+          { label: 'Piano', value: property.floor ?? '—' },
+          { label: 'Ascensore', value: property.hasElevator ? 'Sì' : 'No' },
+        ].map(({ label, value }) => (
+          <div key={label}>
+            <p style={{ color: '#6B7280', fontSize: '9px', margin: '0 0 1px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+            <p style={{ color: 'white', fontSize: '12px', fontWeight: '600', margin: 0 }}>{value}</p>
+          </div>
+        ))}
       </div>
+
+      {property.pricePerMq && (
+        <p style={{ color: '#6B7280', fontSize: '10px', margin: '6px 0 0 0', borderTop: '1px solid #374151', paddingTop: '6px' }}>
+          {property.pricePerMq} €/m²
+        </p>
+      )}
+
+      {property.score !== null && (
+        <p style={{ color: '#22C55E', fontWeight: '700', fontSize: '13px', marginTop: '6px' }}>
+          Score: {property.score}/100
+        </p>
+      )}
     </div>
   )
 }

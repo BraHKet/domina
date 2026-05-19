@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { calcolaTuttiGliScore } from '../lib/scoring'
 
-// Mappa stato_immobile del DB → tipo usato nell'app
-// ⚠️ Controlla i valori esatti nella tua colonna stato_immobile e aggiusta qui
 function mapStato(stato) {
   if (!stato) return 'non-ristrutturato'
   const s = stato.toLowerCase()
-  if (s.includes('ottim') || s.includes('ristrutturato') || s.includes('buon') || s.includes('nuovo')) {
+  if (s.includes('ottim') || s.includes('ristrutturato')) {
     return 'ristrutturato'
   }
   return 'non-ristrutturato'
@@ -26,6 +25,7 @@ function mapRow(row) {
     lat: row.latitudine ?? 45.093,
     lng: row.longitudine ?? 7.685,
     type: mapStato(row.stato_immobile),
+    stato_immobile: row.stato_immobile ?? null,
     badge: row.label_extra ?? null,
     imageUrl: row.immagine_stanza ?? null,
     pricePerMq: row.prezzo_mq ?? null,
@@ -33,7 +33,8 @@ function mapRow(row) {
     financing: row.acconto_percentuale
       ? Math.round((row.prezzo_valore ?? 0) * row.acconto_percentuale / 100)
       : null,
-    score: null, // non presente in DB
+    score: row.scoring?.totale ?? null,
+    scoreDettaglio: row.scoring?.dettaglio ?? null,
     yearBuilt: null,
     imageCount: null,
   }
@@ -45,20 +46,25 @@ export function useProperties() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    async function fetch() {
-      const { data, error } = await supabase
-        .from('barriera-di-milano')
-        .select('*')
-        .order('id')
+    async function fetchAll() {
+      const [{ data: propData, error: propError }, { data: omiData, error: omiError }] =
+        await Promise.all([
+          supabase.from('barriera-di-milano').select('*').order('id'),
+          supabase.from('tabella-omi-barriera-di-milano').select('*'),
+        ])
 
-      if (error) {
-        setError(error.message)
-      } else {
-        setProperties((data ?? []).map(mapRow))
+      if (propError || omiError) {
+        setError(propError?.message ?? omiError?.message)
+        setLoading(false)
+        return
       }
+
+      const withScores = calcolaTuttiGliScore(propData ?? [], omiData ?? [])
+      setProperties(withScores.map(mapRow))
       setLoading(false)
     }
-    fetch()
+
+    fetchAll()
   }, [])
 
   return { properties, loading, error }
