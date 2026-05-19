@@ -1,7 +1,7 @@
+import { useState } from 'react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 
-// Icons defined at module level to avoid recreation on every render
 const houseIcon = L.divIcon({
   html: `<div style="width:28px;height:28px;background:#F59E0B;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
@@ -38,14 +38,106 @@ const yellowDotIcon = L.divIcon({
   popupAnchor: [0, -13],
 })
 
-function PopupContent({ property }) {
+function ScoreDetailCard({ property, onClose }) {
+  const d = property.scoreDettaglio
+  if (!d) return null
+
+  const items = [
+    { label: 'Sconto da OMI',       desc: 'Quanto è sottomercato rispetto ai prezzi OMI',  value: d.omi,     max: 50 },
+    { label: 'Tempo sul mercato',    desc: 'Giorni in vendita vs media immobili simili',    value: d.tempo,   max: 20 },
+    { label: 'Ristrutturate vicine', desc: 'Velocità vendita ristrutturate nel raggio 50m', value: d.vicine,  max: 15 },
+    { label: 'Stato immobile',       desc: 'Margine di guadagno dalla ristrutturazione',   value: d.stato,   max: 8  },
+    { label: 'Fattori immobile',     desc: 'Piano, ascensore, numero locali',              value: d.fattori, max: 7  },
+  ]
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.6)',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#111827', borderRadius: '16px', padding: '24px',
+          width: '340px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: '#9CA3AF', fontSize: '11px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Dettaglio score
+            </p>
+            <p style={{ color: 'white', fontWeight: '700', fontSize: '14px', margin: 0, lineHeight: '1.3' }}>
+              {property.address}
+            </p>
+          </div>
+          <div style={{ textAlign: 'right', marginLeft: '16px' }}>
+            <p style={{ color: '#22C55E', fontWeight: '800', fontSize: '32px', margin: 0, lineHeight: 1 }}>
+              {property.score}
+            </p>
+            <p style={{ color: '#6B7280', fontSize: '11px', margin: 0 }}>/100</p>
+          </div>
+        </div>
+
+        {/* Score items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {items.map(({ label, desc, value, max }) => {
+            const pct = Math.min(100, Math.max(0, (value / max) * 100))
+            const color = value >= max * 0.7 ? '#22C55E' : value >= max * 0.4 ? '#F59E0B' : '#EF4444'
+            return (
+              <div key={label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
+                  <div>
+                    <p style={{ color: 'white', fontSize: '12px', fontWeight: '600', margin: 0 }}>{label}</p>
+                    <p style={{ color: '#6B7280', fontSize: '10px', margin: '2px 0 0 0' }}>{desc}</p>
+                  </div>
+                  <p style={{ color, fontWeight: '700', fontSize: '13px', margin: '0 0 0 12px', whiteSpace: 'nowrap' }}>
+                    {value}/{max}
+                  </p>
+                </div>
+                <div style={{ height: '4px', background: '#374151', borderRadius: '2px' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '2px' }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            marginTop: '20px', width: '100%', padding: '10px',
+            background: '#1F2937', border: 'none', borderRadius: '10px',
+            color: '#9CA3AF', fontSize: '13px', fontWeight: '600',
+            cursor: 'pointer',
+          }}
+        >
+          Chiudi
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PopupContent({ property, onScoreClick }) {
   return (
     <div style={{ padding: '10px', minWidth: '180px', maxWidth: '200px' }}>
+      {/* Immagine + indirizzo + prezzo */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-        <div style={{
-          width: '44px', height: '36px', borderRadius: '6px',
-          background: '#374151', flexShrink: 0, overflow: 'hidden',
-        }}>
+        <div
+          onClick={() => property.url && window.open(property.url, '_blank')}
+          style={{
+            width: '44px', height: '36px', borderRadius: '6px',
+            background: '#374151', flexShrink: 0, overflow: 'hidden',
+            cursor: property.url ? 'pointer' : 'default',
+          }}
+        >
           {property.imageUrl
             ? <img src={property.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none' }} />
             : <div style={{ width: '100%', height: '100%', background: '#374151' }} />
@@ -61,12 +153,13 @@ function PopupContent({ property }) {
         </div>
       </div>
 
+      {/* Dettagli */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
         {[
           { label: 'Superficie', value: property.size ? `${property.size} m²` : '—' },
-          { label: 'Locali', value: property.rooms ?? '—' },
-          { label: 'Piano', value: property.floor ?? '—' },
-          { label: 'Ascensore', value: property.hasElevator ? 'Sì' : 'No' },
+          { label: 'Locali',     value: property.rooms ?? '—' },
+          { label: 'Piano',      value: property.floor ?? '—' },
+          { label: 'Ascensore',  value: property.hasElevator ? 'Sì' : 'No' },
         ].map(({ label, value }) => (
           <div key={label}>
             <p style={{ color: '#6B7280', fontSize: '9px', margin: '0 0 1px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
@@ -75,16 +168,29 @@ function PopupContent({ property }) {
         ))}
       </div>
 
+      {/* Prezzo mq */}
       {property.pricePerMq && (
         <p style={{ color: '#6B7280', fontSize: '10px', margin: '6px 0 0 0', borderTop: '1px solid #374151', paddingTop: '6px' }}>
           {property.pricePerMq} €/m²
         </p>
       )}
 
+      {/* Score — cliccabile */}
       {property.score !== null && (
-        <p style={{ color: '#22C55E', fontWeight: '700', fontSize: '13px', marginTop: '6px' }}>
-          Score: {property.score}/100
-        </p>
+        <button
+          onClick={onScoreClick}
+          style={{
+            marginTop: '8px', width: '100%', padding: '6px 10px',
+            background: '#052e16', border: '1px solid #16a34a',
+            borderRadius: '8px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ color: '#22C55E', fontWeight: '700', fontSize: '13px' }}>
+            Score: {property.score}/100
+          </span>
+          <span style={{ color: '#16a34a', fontSize: '10px' }}>dettaglio →</span>
+        </button>
       )}
     </div>
   )
@@ -107,62 +213,61 @@ export default function MapView({
   height = '260px',
   className = '',
 }) {
+  const [scoreProperty, setScoreProperty] = useState(null)
   const icon = iconMap[markerType] ?? greenDotIcon
 
   return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      style={{ height, width: '100%', borderRadius: '14px' }}
-      className={className}
-      zoomControl={markerType === 'house'}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-      />
+    <>
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        style={{ height, width: '100%', borderRadius: '14px' }}
+        className={className}
+        zoomControl={markerType === 'house'}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        />
 
-      {/* Regular markers */}
-      {markers.map((p) => (
-        <Marker key={p.id} position={[p.lat, p.lng]} icon={icon}>
-          <Popup closeButton={false}>
-            <PopupContent property={p} />
-          </Popup>
-        </Marker>
-      ))}
+        {markers.map((p) => (
+          <Marker key={p.id} position={[p.lat, p.lng]} icon={icon}>
+            <Popup closeButton={false}>
+              <PopupContent property={p} onScoreClick={() => setScoreProperty(p)} />
+            </Popup>
+          </Marker>
+        ))}
 
-      {/* Selected property — popup auto-opens */}
-      {selectedProperty && (
-        <Marker
-          position={[selectedProperty.lat, selectedProperty.lng]}
-          icon={yellowDotIcon}
-          eventHandlers={{ add: (e) => e.target.openPopup() }}
-        >
-          <Popup closeButton={false} autoClose={false} closeOnClick={false}>
-            <PopupContent property={selectedProperty} />
-          </Popup>
-        </Marker>
+        {selectedProperty && (
+          <Marker
+            position={[selectedProperty.lat, selectedProperty.lng]}
+            icon={yellowDotIcon}
+            eventHandlers={{ add: (e) => e.target.openPopup() }}
+          >
+            <Popup closeButton={false} autoClose={false} closeOnClick={false}>
+              <PopupContent property={selectedProperty} onScoreClick={() => setScoreProperty(selectedProperty)} />
+            </Popup>
+          </Marker>
+        )}
+
+        {cantieri.map((c, i) => (
+          <Circle key={i} center={[c.lat, c.lng]} radius={80}
+            pathOptions={{ color: '#6B7280', fillColor: '#9CA3AF', fillOpacity: 0.5, weight: 1 }} />
+        ))}
+
+        {zoneRischio.map((z, i) => (
+          <Circle key={i} center={[z.lat, z.lng]} radius={z.radius}
+            pathOptions={{ color: '#FCA5A5', fillColor: '#FCA5A5', fillOpacity: 0.3, weight: 0 }} />
+        ))}
+      </MapContainer>
+
+      {/* Score detail overlay */}
+      {scoreProperty && (
+        <ScoreDetailCard
+          property={scoreProperty}
+          onClose={() => setScoreProperty(null)}
+        />
       )}
-
-      {/* Cantieri */}
-      {cantieri.map((c, i) => (
-        <Circle
-          key={i}
-          center={[c.lat, c.lng]}
-          radius={80}
-          pathOptions={{ color: '#6B7280', fillColor: '#9CA3AF', fillOpacity: 0.5, weight: 1 }}
-        />
-      ))}
-
-      {/* Zone a rischio criminalità */}
-      {zoneRischio.map((z, i) => (
-        <Circle
-          key={i}
-          center={[z.lat, z.lng]}
-          radius={z.radius}
-          pathOptions={{ color: '#FCA5A5', fillColor: '#FCA5A5', fillOpacity: 0.3, weight: 0 }}
-        />
-      ))}
-    </MapContainer>
+    </>
   )
 }
