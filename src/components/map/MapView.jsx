@@ -43,11 +43,85 @@ function ScoreDetailCard({ property, onClose }) {
   if (!d) return null
 
   const items = [
-    { label: 'Sconto da OMI',       desc: 'Quanto è sottomercato rispetto ai prezzi OMI',  value: d.omi,     max: 50 },
-    { label: 'Tempo sul mercato',    desc: 'Giorni in vendita vs media immobili simili',    value: d.tempo,   max: 20 },
-    { label: 'Ristrutturate vicine', desc: 'Velocità vendita ristrutturate nel raggio 50m', value: d.vicine,  max: 15 },
-    { label: 'Stato immobile',       desc: 'Margine di guadagno dalla ristrutturazione',   value: d.stato,   max: 8  },
-    { label: 'Fattori immobile',     desc: 'Piano, ascensore, numero locali',              value: d.fattori, max: 7  },
+    {
+      label: 'Sconto da OMI',
+      max: 50,
+      pt: d.omi.pt,
+      detail: d.omi.meta ? (
+        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>
+            Min <span style={{ color: 'white' }}>{d.omi.meta.omiMin} €/mq</span>
+          </span>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>
+            Max <span style={{ color: 'white' }}>{d.omi.meta.omiMax} €/mq</span>
+          </span>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>
+            Casa <span style={{ color: '#F59E0B', fontWeight: '700' }}>{d.omi.meta.prezzoMq} €/mq</span>
+          </span>
+          {d.omi.meta.sconto > 0
+            ? <span style={{ color: '#22C55E', fontSize: '10px', fontWeight: '600' }}>-{d.omi.meta.sconto}% sotto media</span>
+            : <span style={{ color: '#EF4444', fontSize: '10px', fontWeight: '600' }}>+{Math.abs(d.omi.meta.sconto)}% sopra media</span>
+          }
+        </div>
+      ) : null,
+    },
+    {
+      label: 'Tempo sul mercato',
+      max: 20,
+      pt: d.tempo.pt,
+      detail: d.tempo.meta ? (
+        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>
+            Giorni <span style={{ color: 'white', fontWeight: '600' }}>{d.tempo.meta.giorni}</span>
+          </span>
+          {d.tempo.meta.mediaZona && (
+            <span style={{ color: '#6B7280', fontSize: '10px' }}>
+              Media zona <span style={{ color: 'white', fontWeight: '600' }}>{d.tempo.meta.mediaZona} gg</span>
+            </span>
+          )}
+        </div>
+      ) : null,
+    },
+    {
+      label: 'Ristrutturate vicine',
+      max: 15,
+      pt: d.vicine.pt,
+      detail: d.vicine.meta ? (
+        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+          {d.vicine.meta.count === 0
+            ? <span style={{ color: '#6B7280', fontSize: '10px' }}>Nessuna ristrutturata nel raggio 50m</span>
+            : <>
+                <span style={{ color: '#6B7280', fontSize: '10px' }}>
+                  Case vicine <span style={{ color: 'white', fontWeight: '600' }}>{d.vicine.meta.count}</span>
+                </span>
+                <span style={{ color: '#6B7280', fontSize: '10px' }}>
+                  Media mercato <span style={{ color: 'white', fontWeight: '600' }}>{d.vicine.meta.mediaGiorni} gg</span>
+                </span>
+              </>
+          }
+        </div>
+      ) : null,
+    },
+    {
+      label: 'Fattori immobile',
+      max: 7,
+      pt: d.fattori.pt,
+      detail: d.fattori.meta ? (
+        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>
+            Piano <span style={{ color: 'white', fontWeight: '600' }}>{d.fattori.meta.piano || '—'}</span>
+          </span>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>
+            Ascensore <span style={{ color: d.fattori.meta.ascensore ? '#22C55E' : '#EF4444', fontWeight: '600' }}>
+              {d.fattori.meta.ascensore ? 'Sì' : 'No'}
+            </span>
+          </span>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>
+            Locali <span style={{ color: 'white', fontWeight: '600' }}>{d.fattori.meta.locali}</span>
+          </span>
+        </div>
+      ) : null,
+    },
   ]
 
   return (
@@ -63,7 +137,8 @@ function ScoreDetailCard({ property, onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: '#111827', borderRadius: '16px', padding: '24px',
-          width: '340px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          width: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          maxHeight: '90vh', overflowY: 'auto',
         }}
       >
         {/* Header */}
@@ -84,31 +159,28 @@ function ScoreDetailCard({ property, onClose }) {
           </div>
         </div>
 
-        {/* Score items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {items.map(({ label, desc, value, max }) => {
-            const pct = Math.min(100, Math.max(0, (value / max) * 100))
-            const color = value >= max * 0.7 ? '#22C55E' : value >= max * 0.4 ? '#F59E0B' : '#EF4444'
+        {/* Items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {items.map(({ label, pt, max, detail }) => {
+            const pct = Math.min(100, Math.max(0, (pt / max) * 100))
+            const color = pt >= max * 0.7 ? '#22C55E' : pt >= max * 0.4 ? '#F59E0B' : '#EF4444'
             return (
               <div key={label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
-                  <div>
-                    <p style={{ color: 'white', fontSize: '12px', fontWeight: '600', margin: 0 }}>{label}</p>
-                    <p style={{ color: '#6B7280', fontSize: '10px', margin: '2px 0 0 0' }}>{desc}</p>
-                  </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <p style={{ color: 'white', fontSize: '12px', fontWeight: '600', margin: 0 }}>{label}</p>
                   <p style={{ color, fontWeight: '700', fontSize: '13px', margin: '0 0 0 12px', whiteSpace: 'nowrap' }}>
-                    {value}/{max}
+                    {pt}/{max}
                   </p>
                 </div>
-                <div style={{ height: '4px', background: '#374151', borderRadius: '2px' }}>
+                <div style={{ height: '4px', background: '#374151', borderRadius: '2px', marginBottom: '5px' }}>
                   <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '2px' }} />
                 </div>
+                {detail}
               </div>
             )
           })}
         </div>
 
-        {/* Close button */}
         <button
           onClick={onClose}
           style={{

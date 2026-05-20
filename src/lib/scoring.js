@@ -20,12 +20,10 @@ function daysOnMarket(dataCreazione) {
 }
 
 // ─── A) Sconto da OMI (max 50pt) ─────────────────────────────────────────────
-// Confronta prezzo_mq della casa vs range OMI per la stessa tipologia
-// È il fattore più importante: essere sottomercato è il segnale più oggettivo
 
 export function scoreOMI(property, omiRows) {
   const mq = property.prezzo_mq
-  if (!mq || !omiRows?.length) return 0
+  if (!mq || !omiRows?.length) return { pt: 0, meta: null }
 
   const tipologia = (property.tipologia ?? '').toLowerCase()
   const omiRow =
@@ -34,27 +32,37 @@ export function scoreOMI(property, omiRows) {
 
   const min = omiRow?.prezzo_min
   const max = omiRow?.prezzo_max
-  if (!min || !max) return 0
+  if (!min || !max) return { pt: 0, meta: null }
 
   const media = (min + max) / 2
-  const diff = (media - mq) / media // positivo = sottomercato
+  const diff = (media - mq) / media
 
-  if (diff >= 0.40) return 50  // >40% sotto media OMI → jackpot
-  if (diff >= 0.30) return 42
-  if (diff >= 0.20) return 35
-  if (diff >= 0.10) return 25
-  if (diff >= 0)    return 15  // sotto media ma meno del 10%
-  if (mq <= max)    return 5   // tra media e max OMI
-  return 0                     // sopra max OMI
+  let pt = 0
+  if (diff >= 0.40) pt = 50
+  else if (diff >= 0.30) pt = 42
+  else if (diff >= 0.20) pt = 35
+  else if (diff >= 0.10) pt = 25
+  else if (diff >= 0)    pt = 15
+  else if (mq <= max)    pt = 5
+  else pt = 0
+
+  return {
+    pt,
+    meta: {
+      prezzoMq: mq,
+      omiMin: min,
+      omiMax: max,
+      omiMedia: Math.round(media),
+      sconto: Math.round(diff * 100), // percentuale sotto/sopra media
+    }
+  }
 }
 
 // ─── B) Tempo sul mercato relativo (max 20pt) ────────────────────────────────
-// Confronta giorni in vendita di questa casa vs media delle case simili
-// Ratio alto = venditore motivato a vendere
 
 export function scoreTempoMercato(property, allProperties) {
   const giorni = daysOnMarket(property.data_creazione)
-  if (giorni === null) return 0
+  if (giorni === null) return { pt: 0, meta: null }
 
   const simili = allProperties.filter(
     (p) =>
@@ -63,24 +71,34 @@ export function scoreTempoMercato(property, allProperties) {
       p.data_creazione
   )
 
-  if (!simili.length) return giorni > 60 ? 10 : 5
+  let pt = 0
+  let mediaGiorni = null
 
-  const mediaGiorni =
-    simili.reduce((acc, p) => acc + daysOnMarket(p.data_creazione), 0) /
-    simili.length
+  if (!simili.length) {
+    pt = giorni > 60 ? 10 : 5
+  } else {
+    mediaGiorni = Math.round(
+      simili.reduce((acc, p) => acc + daysOnMarket(p.data_creazione), 0) /
+      simili.length
+    )
+    const ratio = giorni / mediaGiorni
+    if (ratio >= 2.0) pt = 20
+    else if (ratio >= 1.5) pt = 16
+    else if (ratio >= 1.2) pt = 12
+    else if (ratio >= 1.0) pt = 8
+    else pt = 3
+  }
 
-  const ratio = giorni / mediaGiorni
-
-  if (ratio >= 2.0) return 20
-  if (ratio >= 1.5) return 16
-  if (ratio >= 1.2) return 12
-  if (ratio >= 1.0) return 8
-  return 3
+  return {
+    pt,
+    meta: {
+      giorni,
+      mediaZona: mediaGiorni,
+    }
+  }
 }
 
 // ─── C) Velocità ristrutturate vicine entro 50m (max 15pt) ───────────────────
-// Case "Ottimo / Ristrutturato" nel raggio 50m → se si vendono veloce
-// significa che c'è domanda attiva post-ristrutturazione in quella micro-area
 
 export function scoreRistrutturationeVicine(property, allProperties) {
   const RAGGIO_METRI = 50
@@ -99,34 +117,27 @@ export function scoreRistrutturationeVicine(property, allProperties) {
       ) <= RAGGIO_METRI
   )
 
-  if (!vicine.length) return 7 // dati insufficienti → neutro
+  if (!vicine.length) return { pt: 7, meta: { mediaGiorni: null, count: 0 } }
 
-  const mediaGiorni =
+  const mediaGiorni = Math.round(
     vicine.reduce((acc, p) => acc + (daysOnMarket(p.data_creazione) ?? 90), 0) /
     vicine.length
+  )
 
-  if (mediaGiorni <= 30)  return 15
-  if (mediaGiorni <= 60)  return 12
-  if (mediaGiorni <= 90)  return 9
-  if (mediaGiorni <= 150) return 5
-  return 2
-}
+  let pt = 0
+  if (mediaGiorni <= 30)  pt = 15
+  else if (mediaGiorni <= 60)  pt = 12
+  else if (mediaGiorni <= 90)  pt = 9
+  else if (mediaGiorni <= 150) pt = 5
+  else pt = 2
 
-// ─── D) Stato immobile (max 8pt) ─────────────────────────────────────────────
-// Da ristrutturare = margine massimo di guadagno
-// Buono/Abitabile = margine ridotto ma presente
-
-export function scoreStato(property) {
-  switch (property.stato_immobile) {
-    case 'Da ristrutturare':  return 8
-    case 'Buono / Abitabile': return 4
-    default:                  return 0
+  return {
+    pt,
+    meta: { mediaGiorni, count: vicine.length }
   }
 }
 
-// ─── E) Fattori immobile (max 7pt, con penalità) ─────────────────────────────
-// Ascensore, piano e numero locali influenzano la rivendibilità
-// Penalità forte per piani alti senza ascensore (difficili da rivendere)
+// ─── D) Fattori immobile (max 7pt, con penalità) ─────────────────────────────
 
 export function scorefattoriImmobile(property) {
   let pt = 0
@@ -135,51 +146,103 @@ export function scorefattoriImmobile(property) {
   const ascensore = property.ascensore ?? false
   const locali = property.locali ?? 0
 
-  // Ascensore
   if (ascensore) pt += 2
 
-  // Piano
   if (piano >= 2 && piano <= 5) pt += 2
   else if (piano === 1) pt += 1
 
-  // Penalità piano alto senza ascensore
   if (!ascensore && piano >= 5) pt -= 20
   else if (!ascensore && piano >= 4) pt -= 10
 
-  // Liquidità per numero locali (bilocali più liquidi in zona)
   if (locali === 2)      pt += 3
   else if (locali === 3) pt += 2
   else if (locali >= 4)  pt += 1
 
-  return pt
+  return {
+    pt,
+    meta: { piano, ascensore, locali }
+  }
+}
+
+// ─── E) Contesto urbano OSM nel raggio 50m (max 15pt) ────────────────────────
+
+const TAGS_NEGATIVI = [
+  '["shop"="vacant"]',
+  '["amenity"="gambling"]',
+  '["building"="abandoned"]',
+  '["amenity"="bureau_de_change"]',
+  '["amenity"="bar"]',
+  '["housing"="social"]',
+  '["social_facility"="shelter"]',
+]
+
+const TAGS_POSITIVI = [
+  '["amenity"="school"]',
+  '["amenity"="kindergarten"]',
+  '["amenity"="pharmacy"]',
+  '["shop"="supermarket"]',
+  '["leisure"="park"]',
+  '["amenity"="restaurant"]',
+  '["amenity"="cafe"]',
+]
+
+export async function fetchContestoUrbano(lat, lng) {
+  const RAGGIO = 200
+
+  const buildQuery = (tags) =>
+    tags.map((t) => `node${t}(around:${RAGGIO},${lat},${lng});`).join('\n')
+
+  const query = `
+    [out:json][timeout:10];
+    (
+      ${buildQuery(TAGS_NEGATIVI)}
+      ${buildQuery(TAGS_POSITIVI)}
+    );
+    out tags;
+  `
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: query,
+    })
+    const data = await res.json()
+    return data.elements ?? []
+  } catch {
+    return []
+  }
 }
 
 // ─── Score totale ─────────────────────────────────────────────────────────────
 
-const STATI_SCORABILI = ['Da ristrutturare', 'Buono / Abitabile']
+const STATI_SCORABILI = ['Da ristrutturare']
 
-export function calcolaScore(property, allProperties, omiRows) {
+export function calcolaScore(property, allProperties, omiRows, osmElements = []) {
   if (!STATI_SCORABILI.includes(property.stato_immobile)) return null
 
   const a = scoreOMI(property, omiRows)
   const b = scoreTempoMercato(property, allProperties)
   const c = scoreRistrutturationeVicine(property, allProperties)
-  const d = scoreStato(property)
-  const e = scorefattoriImmobile(property)
+  const d = scorefattoriImmobile(property)
 
-  const totale = Math.min(100, Math.max(0, a + b + c + d + e))
+  const totale = Math.min(100, Math.max(0, a.pt + b.pt + c.pt + d.pt))
 
   return {
     totale,
-    dettaglio: { omi: a, tempo: b, vicine: c, stato: d, fattori: e },
+    dettaglio: {
+      omi:      { pt: a.pt, max: 50, meta: a.meta },
+      tempo:    { pt: b.pt, max: 20, meta: b.meta },
+      vicine:   { pt: c.pt, max: 15, meta: c.meta },
+      fattori:  { pt: d.pt, max: 7,  meta: d.meta },
+    },
   }
 }
 
-// ─── Calcola score per tutti gli immobili ────────────────────────────────────
+// ─── Calcola score per tutti (sincrono, OSM on-demand nel popup) ──────────────
 
 export function calcolaTuttiGliScore(allRawProperties, omiRows) {
   return allRawProperties.map((p) => ({
     ...p,
-    scoring: calcolaScore(p, allRawProperties, omiRows),
+    scoring: calcolaScore(p, allRawProperties, omiRows, []),
   }))
 }
