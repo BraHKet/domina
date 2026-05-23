@@ -2,17 +2,15 @@ import { haversineMeters } from './haversineMeters'
 
 const RAGGIO_METRI = 200
 
-// Converte DD/MM/YYYY (o DD/MM/YYYY HH:mm) → "YYYY-MM-DD" per sort e parse corretto
 function toISO(val) {
   if (!val) return ''
   const s = String(val).trim()
-  // formato italiano DD/MM/YYYY o DD/MM/YYYY HH:mm
   if (s.includes('/')) {
     const [datePart] = s.split(' ')
     const [d, m, y] = datePart.split('/')
     return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
   }
-  return s.slice(0, 10) // fallback ISO
+  return s.slice(0, 10)
 }
 
 function daysOnMarket(dataCreazione) {
@@ -42,7 +40,7 @@ export function scoreVelocitaVendita(property, storicoRows) {
     )
 
     const vicini = rowsUltimaData.filter(r =>
-      r.id !== property.id &&
+      String(r.id) !== String(property.id) &&
       r.stato_immobile === 'Da ristrutturare' &&
       r.latitudine && r.longitudine &&
       haversineMeters(
@@ -69,7 +67,7 @@ export function scoreVelocitaVendita(property, storicoRows) {
 
   // ── PARTE 2: ribassi storici prezzo dello stesso annuncio ───────────────────
   const storicoAnnuncio = storicoRows
-    .filter(r => r.id === property.id && r.data_scraping && r.prezzo_valore != null)
+    .filter(r => String(r.id) === String(property.id) && r.data_scraping && r.prezzo_valore != null)
     .sort((a, b) => toISO(a.data_scraping).localeCompare(toISO(b.data_scraping)))
 
   let numRibassi = 0
