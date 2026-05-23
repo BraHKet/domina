@@ -1,42 +1,9 @@
 import { Link, useLocation } from 'react-router-dom'
-import {
-  LayoutDashboard,
-  User,
-  Users,
-  HardHat,
-  Building2,
-  Settings,
-  LogOut,
-} from 'lucide-react'
-
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/acquirente', icon: User, label: 'Acquirente' },
-  { to: '/demografica', icon: Users, label: 'Demografica' },
-  { to: '/non-ristrutturati', icon: HardHat, label: 'Non Ristruttt.' },
-  { to: '/ristrutturato', icon: Building2, label: 'Ristrutturato' },
-]
-
-function NavItem({ to, icon: Icon, label }) {
-  const { pathname } = useLocation()
-  const isActive = pathname === to
-
-  return (
-    <Link
-      to={to}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-        isActive
-          ? 'bg-gray-900 text-white'
-          : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
-      }`}
-    >
-      <Icon size={17} className={isActive ? 'text-amber-400' : ''} />
-      {label}
-    </Link>
-  )
-}
+import { LayoutDashboard, User } from 'lucide-react'
 
 export default function Sidebar() {
+  const { pathname } = useLocation()
+
   return (
     <aside className="w-64 min-h-screen bg-white border-r border-gray-100 flex flex-col shrink-0">
       {/* Logo */}
@@ -51,33 +18,30 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-4 space-y-1">
-        {navItems.map((item) => (
-          <NavItem key={item.to} {...item} />
-        ))}
-      </nav>
+        {/* Dashboard */}
+        <Link
+          to="/dashboard"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            pathname === '/dashboard'
+              ? 'bg-gray-900 text-white'
+              : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
+          }`}
+        >
+          <LayoutDashboard size={17} className={pathname === '/dashboard' ? 'text-amber-400' : ''} />
+          Dashboard
+        </Link>
 
-      {/* User */}
-      <div className="px-4 pb-6 flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-200">
-          <img
-            src="https://i.pravatar.cc/56?img=11"
-            alt="Lorenzo"
-            className="w-full h-full object-cover"
-          />
+        {/* Acquirente — disabilitato */}
+        <div className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 cursor-not-allowed select-none">
+          <div className="flex items-center gap-3">
+            <User size={17} />
+            Acquirente
+          </div>
+          <span className="text-[10px] font-semibold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
+            A breve
+          </span>
         </div>
-        <div className="text-center">
-          <p className="text-sm font-semibold text-gray-900">Lorenzo</p>
-          <p className="text-xs text-gray-400">Investitore immobiliare</p>
-        </div>
-        <div className="flex gap-2">
-          <button className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-400 hover:text-gray-700 transition-colors">
-            <Settings size={15} />
-          </button>
-          <button className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-400 hover:text-gray-700 transition-colors">
-            <LogOut size={15} />
-          </button>
-        </div>
-      </div>
+      </nav>
     </aside>
   )
 }

@@ -5,9 +5,6 @@ import { Search } from 'lucide-react'
 const pageTitles = {
   '/dashboard': 'Dashboard',
   '/acquirente': "Profilo dell'acquirente di zona",
-  '/demografica': 'Demografica',
-  '/non-ristrutturati': 'Non ristrutturati',
-  '/ristrutturato': 'Ristrutturato',
 }
 
 export default function Layout() {
@@ -19,7 +16,6 @@ export default function Layout() {
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-gray-100 shrink-0">
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           <div className="flex items-center gap-3">
@@ -37,7 +33,6 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
