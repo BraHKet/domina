@@ -49,7 +49,7 @@ export function useProperties() {
     async function fetchAll() {
       const [{ data: propData, error: propError }, { data: omiData, error: omiError }] =
         await Promise.all([
-          supabase.from('barriera-di-milano').select('*').order('id'),
+          supabase.from('barriera-di-milano-attuale').select('*').order('id'),
           supabase.from('tabella-omi-barriera-di-milano').select('*'),
         ])
 
