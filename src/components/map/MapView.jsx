@@ -2,6 +2,8 @@ import { useState } from 'react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 
+// ── Icone mappa ───────────────────────────────────────────────────────────────
+
 const houseIcon = L.divIcon({
   html: `<div style="width:28px;height:28px;background:#F59E0B;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
@@ -38,27 +40,100 @@ const yellowDotIcon = L.divIcon({
   popupAnchor: [0, -13],
 })
 
+// ── Grafico storico prezzi ────────────────────────────────────────────────────
+
+function PriceChart({ storicoAnnuncio }) {
+  if (!storicoAnnuncio?.length || storicoAnnuncio.length < 2) return null
+
+  const W = 312, H = 80, PAD = 10
+  const prezzi = storicoAnnuncio.map(r => r.prezzo)
+  const minP = Math.min(...prezzi)
+  const maxP = Math.max(...prezzi)
+  const range = maxP - minP || 1
+
+  const n = storicoAnnuncio.length
+  const xStep = (W - PAD * 2) / Math.max(n - 1, 1)
+  const toX = i => PAD + i * xStep
+  const toY = p => PAD + (1 - (p - minP) / range) * (H - PAD * 2 - 14)
+
+  const linePath = storicoAnnuncio
+    .map((r, i) => `${i === 0 ? 'M' : 'L'}${toX(i)},${toY(r.prezzo)}`)
+    .join(' ')
+
+  const areaPath =
+    linePath +
+    ` L${toX(n - 1)},${H - 14} L${toX(0)},${H - 14} Z`
+
+  const formatDate = d => {
+    if (!d) return ''
+    const dt = new Date(d)
+    return `${dt.getDate()}/${dt.getMonth() + 1}`
+  }
+
+  return (
+    <div style={{ marginTop: '12px' }}>
+      <p style={{
+        color: '#6B7280', fontSize: '10px', margin: '0 0 6px 0',
+        textTransform: 'uppercase', letterSpacing: '0.05em',
+      }}>
+        Storico prezzo annuncio
+      </p>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: `${H}px` }}>
+        {/* Area fill */}
+        <path d={areaPath} fill="rgba(34,197,94,0.08)" />
+        {/* Linea */}
+        <path d={linePath} fill="none" stroke="#22C55E" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Punti + label */}
+        {storicoAnnuncio.map((r, i) => {
+          const isRibasso = i > 0 && r.prezzo < storicoAnnuncio[i - 1].prezzo
+          const cx = toX(i)
+          const cy = toY(r.prezzo)
+          return (
+            <g key={i}>
+              <circle cx={cx} cy={cy} r={3} fill={isRibasso ? '#EF4444' : '#22C55E'} />
+              {/* label prezzo sopra il punto */}
+              <text
+                x={cx} y={cy - 6}
+                textAnchor="middle" fontSize="7.5" fill="#D1D5DB"
+                fontWeight="600"
+              >
+                {(r.prezzo / 1000).toFixed(0)}k
+              </text>
+              {/* label data sotto */}
+              <text
+                x={cx} y={H - 2}
+                textAnchor="middle" fontSize="7" fill="#4B5563"
+              >
+                {formatDate(r.data)}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
+// ── ScoreDetailCard ───────────────────────────────────────────────────────────
+
 function ScoreDetailCard({ property, onClose }) {
   const d = property.scoreDettaglio
   if (!d) return null
 
   const items = [
     {
-      label: 'Sconto da OMI',
-      max: 50,
+      label: 'Sconto OMI',
       pt: d.omi.pt,
+      max: d.omi.max,
       detail: d.omi.meta ? (
-        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
           <span style={{ color: '#6B7280', fontSize: '10px' }}>
-            Min <span style={{ color: 'white' }}>{d.omi.meta.omiMin} €/mq</span>
+            Casa <span style={{ color: '#F59E0B', fontWeight: '700' }}>{d.omi.meta.prezzoMq} €/m²</span>
           </span>
           <span style={{ color: '#6B7280', fontSize: '10px' }}>
-            Max <span style={{ color: 'white' }}>{d.omi.meta.omiMax} €/mq</span>
+            OMI media <span style={{ color: 'white', fontWeight: '600' }}>{d.omi.meta.omiMedia} €/m²</span>
           </span>
-          <span style={{ color: '#6B7280', fontSize: '10px' }}>
-            Casa <span style={{ color: '#F59E0B', fontWeight: '700' }}>{d.omi.meta.prezzoMq} €/mq</span>
-          </span>
-          {d.omi.meta.sconto > 0
+          {d.omi.meta.sconto >= 0
             ? <span style={{ color: '#22C55E', fontSize: '10px', fontWeight: '600' }}>-{d.omi.meta.sconto}% sotto media</span>
             : <span style={{ color: '#EF4444', fontSize: '10px', fontWeight: '600' }}>+{Math.abs(d.omi.meta.sconto)}% sopra media</span>
           }
@@ -66,59 +141,36 @@ function ScoreDetailCard({ property, onClose }) {
       ) : null,
     },
     {
-      label: 'Tempo sul mercato',
-      max: 20,
-      pt: d.tempo.pt,
-      detail: d.tempo.meta ? (
-        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-          <span style={{ color: '#6B7280', fontSize: '10px' }}>
-            Giorni <span style={{ color: 'white', fontWeight: '600' }}>{d.tempo.meta.giorni}</span>
-          </span>
-          {d.tempo.meta.mediaZona && (
+      label: 'Velocità di vendita',
+      pt: d.velocita.pt,
+      max: d.velocita.max,
+      detail: d.velocita.meta ? (
+        <div style={{ marginTop: '4px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {d.velocita.meta.mioGiorni != null && (
+              <span style={{ color: '#6B7280', fontSize: '10px' }}>
+                Giorni annuncio <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.mioGiorni}</span>
+              </span>
+            )}
+            {d.velocita.meta.mediaZonaGiorni != null && (
+              <span style={{ color: '#6B7280', fontSize: '10px' }}>
+                Media zona <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.mediaZonaGiorni} gg</span>
+              </span>
+            )}
             <span style={{ color: '#6B7280', fontSize: '10px' }}>
-              Media zona <span style={{ color: 'white', fontWeight: '600' }}>{d.tempo.meta.mediaZona} gg</span>
+              Vicini 200m <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.countVicini}</span>
             </span>
-          )}
-        </div>
-      ) : null,
-    },
-    {
-      label: 'Ristrutturate vicine',
-      max: 15,
-      pt: d.vicine.pt,
-      detail: d.vicine.meta ? (
-        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-          {d.vicine.meta.count === 0
-            ? <span style={{ color: '#6B7280', fontSize: '10px' }}>Nessuna ristrutturata nel raggio 50m</span>
-            : <>
-                <span style={{ color: '#6B7280', fontSize: '10px' }}>
-                  Case vicine <span style={{ color: 'white', fontWeight: '600' }}>{d.vicine.meta.count}</span>
-                </span>
-                <span style={{ color: '#6B7280', fontSize: '10px' }}>
-                  Media mercato <span style={{ color: 'white', fontWeight: '600' }}>{d.vicine.meta.mediaGiorni} gg</span>
-                </span>
-              </>
-          }
-        </div>
-      ) : null,
-    },
-    {
-      label: 'Fattori immobile',
-      max: 7,
-      pt: d.fattori.pt,
-      detail: d.fattori.meta ? (
-        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-          <span style={{ color: '#6B7280', fontSize: '10px' }}>
-            Piano <span style={{ color: 'white', fontWeight: '600' }}>{d.fattori.meta.piano || '—'}</span>
-          </span>
-          <span style={{ color: '#6B7280', fontSize: '10px' }}>
-            Ascensore <span style={{ color: d.fattori.meta.ascensore ? '#22C55E' : '#EF4444', fontWeight: '600' }}>
-              {d.fattori.meta.ascensore ? 'Sì' : 'No'}
+            <span style={{ color: '#6B7280', fontSize: '10px' }}>
+              Ribassi{' '}
+              <span style={{
+                color: d.velocita.meta.numRibassi > 0 ? '#22C55E' : '#9CA3AF',
+                fontWeight: '600',
+              }}>
+                {d.velocita.meta.numRibassi}
+              </span>
             </span>
-          </span>
-          <span style={{ color: '#6B7280', fontSize: '10px' }}>
-            Locali <span style={{ color: 'white', fontWeight: '600' }}>{d.fattori.meta.locali}</span>
-          </span>
+          </div>
+          <PriceChart storicoAnnuncio={d.velocita.meta.storicoAnnuncio} />
         </div>
       ) : null,
     },
@@ -134,7 +186,7 @@ function ScoreDetailCard({ property, onClose }) {
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
         style={{
           background: '#111827', borderRadius: '16px', padding: '24px',
           width: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
@@ -144,7 +196,10 @@ function ScoreDetailCard({ property, onClose }) {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
           <div style={{ flex: 1 }}>
-            <p style={{ color: '#9CA3AF', fontSize: '11px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <p style={{
+              color: '#9CA3AF', fontSize: '11px', margin: '0 0 4px 0',
+              textTransform: 'uppercase', letterSpacing: '0.05em',
+            }}>
               Dettaglio score
             </p>
             <p style={{ color: 'white', fontWeight: '700', fontSize: '14px', margin: 0, lineHeight: '1.3' }}>
@@ -159,11 +214,11 @@ function ScoreDetailCard({ property, onClose }) {
           </div>
         </div>
 
-        {/* Items */}
+        {/* Barre score */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {items.map(({ label, pt, max, detail }) => {
             const pct = Math.min(100, Math.max(0, (pt / max) * 100))
-            const color = pt >= max * 0.7 ? '#22C55E' : pt >= max * 0.4 ? '#F59E0B' : '#EF4444'
+            const color = pct >= 70 ? '#22C55E' : pct >= 40 ? '#F59E0B' : '#EF4444'
             return (
               <div key={label}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -173,7 +228,7 @@ function ScoreDetailCard({ property, onClose }) {
                   </p>
                 </div>
                 <div style={{ height: '4px', background: '#374151', borderRadius: '2px', marginBottom: '5px' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '2px' }} />
+                  <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '2px', transition: 'width 0.4s ease' }} />
                 </div>
                 {detail}
               </div>
@@ -197,6 +252,8 @@ function ScoreDetailCard({ property, onClose }) {
   )
 }
 
+// ── PopupContent ──────────────────────────────────────────────────────────────
+
 function PopupContent({ property, onScoreClick }) {
   return (
     <div style={{ padding: '10px', minWidth: '180px', maxWidth: '200px' }}>
@@ -211,12 +268,15 @@ function PopupContent({ property, onScoreClick }) {
           }}
         >
           {property.imageUrl
-            ? <img src={property.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none' }} />
+            ? <img src={property.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none' }} />
             : <div style={{ width: '100%', height: '100%', background: '#374151' }} />
           }
         </div>
         <div>
-          <p style={{ color: '#9CA3AF', fontSize: '10px', margin: '0 0 1px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+          <p style={{
+            color: '#9CA3AF', fontSize: '10px', margin: '0 0 1px 0',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px',
+          }}>
             {property.address}
           </p>
           <p style={{ color: '#F59E0B', fontWeight: '700', fontSize: '14px', margin: 0 }}>
@@ -225,7 +285,7 @@ function PopupContent({ property, onScoreClick }) {
         </div>
       </div>
 
-      {/* Dettagli */}
+      {/* Dettagli griglia */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
         {[
           { label: 'Superficie', value: property.size ? `${property.size} m²` : '—' },
@@ -268,9 +328,11 @@ function PopupContent({ property, onScoreClick }) {
   )
 }
 
+// ── MapView ───────────────────────────────────────────────────────────────────
+
 const iconMap = {
-  house: houseIcon,
-  'green-dot': greenDotIcon,
+  house:        houseIcon,
+  'green-dot':  greenDotIcon,
   'orange-dot': orangeDotIcon,
 }
 
@@ -286,7 +348,7 @@ export default function MapView({
   className = '',
 }) {
   const [scoreProperty, setScoreProperty] = useState(null)
-  const icon = iconMap[markerType] ?? greenDotIcon
+  const icon = iconMap[markerType] ?? houseIcon
 
   return (
     <>
@@ -302,7 +364,7 @@ export default function MapView({
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        {markers.map((p) => (
+        {markers.map(p => (
           <Marker key={p.id} position={[p.lat, p.lng]} icon={icon}>
             <Popup closeButton={false}>
               <PopupContent property={p} onScoreClick={() => setScoreProperty(p)} />
@@ -314,7 +376,7 @@ export default function MapView({
           <Marker
             position={[selectedProperty.lat, selectedProperty.lng]}
             icon={yellowDotIcon}
-            eventHandlers={{ add: (e) => e.target.openPopup() }}
+            eventHandlers={{ add: e => e.target.openPopup() }}
           >
             <Popup closeButton={false} autoClose={false} closeOnClick={false}>
               <PopupContent property={selectedProperty} onScoreClick={() => setScoreProperty(selectedProperty)} />
@@ -333,7 +395,6 @@ export default function MapView({
         ))}
       </MapContainer>
 
-      {/* Score detail overlay */}
       {scoreProperty && (
         <ScoreDetailCard
           property={scoreProperty}

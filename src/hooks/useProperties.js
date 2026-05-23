@@ -5,9 +5,7 @@ import { calcolaTuttiGliScore } from '../lib/scoring'
 function mapStato(stato) {
   if (!stato) return 'non-ristrutturato'
   const s = stato.toLowerCase()
-  if (s.includes('ottim') || s.includes('ristrutturato')) {
-    return 'ristrutturato'
-  }
+  if (s.includes('ottim') || s.includes('ristrutturato')) return 'ristrutturato'
   return 'non-ristrutturato'
 }
 
@@ -47,19 +45,29 @@ export function useProperties() {
 
   useEffect(() => {
     async function fetchAll() {
-      const [{ data: propData, error: propError }, { data: omiData, error: omiError }] =
-        await Promise.all([
-          supabase.from('barriera-di-milano-attuale').select('*').order('id'),
-          supabase.from('tabella-omi-barriera-di-milano').select('*'),
-        ])
+      const [
+        { data: propData,     error: propError },
+        { data: omiData,      error: omiError },
+        { data: storicoData,  error: storicoError },
+      ] = await Promise.all([
+        supabase.from('barriera-di-milano-attuale').select('*').order('id'),
+        supabase.from('tabella-omi-barriera-di-milano').select('*'),
+        supabase
+          .from('barriera-di-milano-storico')
+          .select('id, data_scraping, prezzo_valore, data_creazione, stato_immobile, latitudine, longitudine'),
+      ])
 
-      if (propError || omiError) {
-        setError(propError?.message ?? omiError?.message)
+      if (propError || omiError || storicoError) {
+        setError(propError?.message ?? omiError?.message ?? storicoError?.message)
         setLoading(false)
         return
       }
 
-      const withScores = calcolaTuttiGliScore(propData ?? [], omiData ?? [])
+      const withScores = calcolaTuttiGliScore(
+        propData  ?? [],
+        omiData   ?? [],
+        storicoData ?? [],
+      )
       setProperties(withScores.map(mapRow))
       setLoading(false)
     }
