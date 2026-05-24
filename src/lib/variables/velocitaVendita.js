@@ -88,18 +88,10 @@ export function scoreVelocitaVendita(property, storicoRows) {
 
   const pt = Math.round(Math.sqrt(ptTempo * ptRibassi))
 
-  if(property.id === 129044216) {
-    console.log(storicoAnnuncio);
-  }
-
   const storicoMappato = storicoAnnuncio.map(r => ({
     data:   toISO(r.data_scraping),
     prezzo: r.prezzo_valore,
   }))
-
-  if(String(property.id) === '129044216') {
-    console.log('storicoMappato', storicoMappato)
-  }
 
   return {
     pt,

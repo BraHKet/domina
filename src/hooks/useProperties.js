@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { calcolaTuttiGliScore } from '../lib/scoring'
+import { scoreOMI } from '../lib/variables/omi'
 
 function mapStato(stato) {
   if (!stato) return null
@@ -47,37 +48,46 @@ export function useProperties() {
   useEffect(() => {
     async function fetchAll() {
       const [
-        { data: propData,     error: propError },
-        { data: omiData,      error: omiError },
-        { data: storicoData,  error: storicoError },
+        { data: propData,  error: propError },
+        { data: omiData,   error: omiError },
       ] = await Promise.all([
         supabase.from('barriera-di-milano-attuale').select('*').order('id'),
         supabase.from('tabella-omi-barriera-di-milano').select('*'),
-        supabase
-          .from('barriera-di-milano-storico')
-          .select('id, data_scraping, prezzo_valore, data_creazione, stato_immobile, latitudine, longitudine').limit(10000),
       ])
 
-      if (propError || omiError || storicoError) {
-        setError(propError?.message ?? omiError?.message ?? storicoError?.message)
+      if (propError || omiError) {
+        setError(propError?.message ?? omiError?.message)
+        setLoading(false)
+        return
+      }
+
+      // fetch storico solo per immobili con score OMI >= 60
+      const ids = (propData ?? [])
+        .filter(p => scoreOMI(p, omiData ?? []).pt >= 60)
+        .map(p => p.id)
+
+      const { data: storicoData, error: storicoError } = await supabase
+        .from('barriera-di-milano-storico')
+        .select('id, data_scraping, prezzo_valore, data_creazione, stato_immobile, latitudine, longitudine')
+        .in('id', ids)
+
+      if (storicoError) {
+        setError(storicoError.message)
         setLoading(false)
         return
       }
 
       const withScores = calcolaTuttiGliScore(
-        propData  ?? [],
-        omiData   ?? [],
+        propData    ?? [],
+        omiData     ?? [],
         storicoData ?? [],
       )
       setProperties(withScores.map(mapRow))
-      console.log('storico 129044216', storicoData.filter(r => String(r.id) === '129044216'))
       setLoading(false)
     }
 
     fetchAll()
-    
   }, [])
 
-  
   return { properties, loading, error }
 }

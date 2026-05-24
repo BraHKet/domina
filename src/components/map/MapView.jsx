@@ -43,7 +43,6 @@ const yellowDotIcon = L.divIcon({
 // ── Grafico storico prezzi ────────────────────────────────────────────────────
 
 function PriceChart({ storicoAnnuncio }) {
-  console.log('PriceChart riceve', storicoAnnuncio)
   if (!storicoAnnuncio?.length || storicoAnnuncio.length < 2) return null
 
   const W = 312, H = 80, PAD = 10
