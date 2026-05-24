@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase'
 import { calcolaTuttiGliScore } from '../lib/scoring'
 
 function mapStato(stato) {
-  if (!stato) return 'non-ristrutturato'
+  if (!stato) return null
   const s = stato.toLowerCase()
   if (s.includes('ottim') || s.includes('ristrutturato')) return 'ristrutturato'
-  return 'non-ristrutturato'
+  if (s.includes('da ristrutturare'))                     return 'non-ristrutturato'
+  return null 
 }
 
 function mapRow(row) {
@@ -54,7 +55,7 @@ export function useProperties() {
         supabase.from('tabella-omi-barriera-di-milano').select('*'),
         supabase
           .from('barriera-di-milano-storico')
-          .select('id, data_scraping, prezzo_valore, data_creazione, stato_immobile, latitudine, longitudine'),
+          .select('id, data_scraping, prezzo_valore, data_creazione, stato_immobile, latitudine, longitudine').limit(10000),
       ])
 
       if (propError || omiError || storicoError) {
@@ -69,11 +70,14 @@ export function useProperties() {
         storicoData ?? [],
       )
       setProperties(withScores.map(mapRow))
+      console.log('storico 129044216', storicoData.filter(r => String(r.id) === '129044216'))
       setLoading(false)
     }
 
     fetchAll()
+    
   }, [])
 
+  
   return { properties, loading, error }
 }

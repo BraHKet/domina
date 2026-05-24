@@ -43,6 +43,7 @@ const yellowDotIcon = L.divIcon({
 // ── Grafico storico prezzi ────────────────────────────────────────────────────
 
 function PriceChart({ storicoAnnuncio }) {
+  console.log('PriceChart riceve', storicoAnnuncio)
   if (!storicoAnnuncio?.length || storicoAnnuncio.length < 2) return null
 
   const W = 312, H = 80, PAD = 10
@@ -152,22 +153,14 @@ function ScoreDetailCard({ property, onClose }) {
                 Giorni annuncio <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.mioGiorni}</span>
               </span>
             )}
-            {d.velocita.meta.mediaZonaGiorni != null && (
-              <span style={{ color: '#6B7280', fontSize: '10px' }}>
-                Media zona <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.mediaZonaGiorni} gg</span>
-              </span>
-            )}
             <span style={{ color: '#6B7280', fontSize: '10px' }}>
-              Vicini 200m <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.countVicini}</span>
+              Ribassi <span style={{ color: d.velocita.meta.numRibassi > 0 ? '#22C55E' : '#9CA3AF', fontWeight: '600' }}>{d.velocita.meta.numRibassi}</span>
             </span>
             <span style={{ color: '#6B7280', fontSize: '10px' }}>
-              Ribassi{' '}
-              <span style={{
-                color: d.velocita.meta.numRibassi > 0 ? '#22C55E' : '#9CA3AF',
-                fontWeight: '600',
-              }}>
-                {d.velocita.meta.numRibassi}
-              </span>
+              pt Tempo <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.ptTempo}</span>
+            </span>
+            <span style={{ color: '#6B7280', fontSize: '10px' }}>
+              pt Ribassi <span style={{ color: 'white', fontWeight: '600' }}>{d.velocita.meta.ptRibassi}</span>
             </span>
           </div>
           <PriceChart storicoAnnuncio={d.velocita.meta.storicoAnnuncio} />

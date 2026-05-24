@@ -1,6 +1,24 @@
 import { haversineMeters } from './haversineMeters'
 
-const RAGGIO_METRI = 200
+const RAGGIO_METRI = 300
+
+
+
+/*
+Converte una data in formato ISO (`YYYY-MM-DD`). Gestisce due casi:
+
+1. **Data con slash** (es. `"25/05/2026 14:30"`) → splitta su `/`, riordina le parti da `DD/MM/YYYY` a `YYYY-MM-DD`, ignorando l'eventuale orario.
+
+2. **Altra stringa** (es. un ISO già pronto come `"2026-05-25T14:30:00"`) → prende solo i primi 10 caratteri, cioè `"2026-05-25"`.
+
+Gestisce anche i casi limite:
+- **Valore falsy** (`null`, `undefined`, `""`) → restituisce `''`
+- **Padding** con `padStart(2,'0')` per garantire mese e giorno sempre a due cifre (es. `"5"` → `"05"`)
+
+
+NON PRENDE L'ORARIO 
+*/
+
 
 function toISO(val) {
   if (!val) return ''
@@ -13,6 +31,10 @@ function toISO(val) {
   return s.slice(0, 10)
 }
 
+
+
+// Calcola quanti giorni sono passati da una data di creazione ad oggi
+
 function daysOnMarket(dataCreazione) {
   if (!dataCreazione) return null
   const iso = toISO(dataCreazione)
@@ -23,47 +45,11 @@ function daysOnMarket(dataCreazione) {
 
 export function scoreVelocitaVendita(property, storicoRows) {
 
-  // ── PARTE 1: liquidità di zona all'ultima data di scraping ──────────────────
-  const dateDisponibili = [...new Set(
-    storicoRows.map(r => toISO(r.data_scraping)).filter(Boolean)
-  )].sort()
-  const ultimoGiorno = dateDisponibili[dateDisponibili.length - 1]
+  // ── PARTE 1 ──────────────────
 
-  let ptZona = 50
-  let mediaZonaGiorni = null
-  let countVicini = 0
-  const mioGiorni = daysOnMarket(property.data_creazione)
+  const mioGiorni = daysOnMarket(property.data_creazione)   // calcola giorni da data di creazione dell'annuncio target
 
-  if (ultimoGiorno) {
-    const rowsUltimaData = storicoRows.filter(
-      r => toISO(r.data_scraping) === ultimoGiorno
-    )
 
-    const vicini = rowsUltimaData.filter(r =>
-      String(r.id) !== String(property.id) &&
-      r.stato_immobile === 'Da ristrutturare' &&
-      r.latitudine && r.longitudine &&
-      haversineMeters(
-        property.latitudine, property.longitudine,
-        r.latitudine,        r.longitudine
-      ) <= RAGGIO_METRI
-    )
-
-    countVicini = vicini.length
-
-    if (vicini.length > 0) {
-      mediaZonaGiorni = Math.round(
-        vicini.reduce((acc, r) => acc + (daysOnMarket(r.data_creazione) ?? 90), 0) /
-        vicini.length
-      )
-
-      if      (mediaZonaGiorni <= 30)  ptZona = 90
-      else if (mediaZonaGiorni <= 60)  ptZona = 75
-      else if (mediaZonaGiorni <= 90)  ptZona = 55
-      else if (mediaZonaGiorni <= 150) ptZona = 35
-      else                             ptZona = 15
-    }
-  }
 
   // ── PARTE 2: ribassi storici prezzo dello stesso annuncio ───────────────────
   const storicoAnnuncio = storicoRows
@@ -77,27 +63,52 @@ export function scoreVelocitaVendita(property, storicoRows) {
     }
   }
 
-  let ptRibassi = 50
-  if (storicoAnnuncio.length > 1) {
-    if      (numRibassi === 0) ptRibassi = 20
-    else if (numRibassi === 1) ptRibassi = 55
-    else if (numRibassi === 2) ptRibassi = 75
-    else                       ptRibassi = 90
+  // CALCOLO SCORE
+
+  let ptTempo = 50 // neutro se manca il dato
+
+  if (mioGiorni !== null) {
+      // nessuna media zona disponibile → giorni assoluti
+    if      (mioGiorni <= 30)  ptTempo = 15
+    else if (mioGiorni <= 60)  ptTempo = 35
+    else if (mioGiorni <= 120) ptTempo = 55
+    else if (mioGiorni <= 240) ptTempo = 75
+    else                       ptTempo = 90
   }
 
-  const pt = Math.round(ptZona * 0.6 + ptRibassi * 0.4)
+  let ptRibassi = 10 // neutro se storico insufficiente
+
+  if (storicoAnnuncio.length > 1) {
+    if      (numRibassi === 0) ptRibassi = 10
+    else if (numRibassi === 1) ptRibassi = 50
+    else if (numRibassi === 2) ptRibassi = 65
+    else if (numRibassi === 3) ptRibassi = 80
+    else                       ptRibassi = 95
+  }
+
+  const pt = Math.round(Math.sqrt(ptTempo * ptRibassi))
+
+  if(property.id === 129044216) {
+    console.log(storicoAnnuncio);
+  }
+
+  const storicoMappato = storicoAnnuncio.map(r => ({
+    data:   toISO(r.data_scraping),
+    prezzo: r.prezzo_valore,
+  }))
+
+  if(String(property.id) === '129044216') {
+    console.log('storicoMappato', storicoMappato)
+  }
 
   return {
-    pt: Math.min(100, Math.max(0, pt)),
+    pt,
     meta: {
-      mediaZonaGiorni,
-      countVicini,
       mioGiorni,
       numRibassi,
-      storicoAnnuncio: storicoAnnuncio.map(r => ({
-        data:   toISO(r.data_scraping),
-        prezzo: r.prezzo_valore,
-      })),
+      ptTempo,
+      ptRibassi,
+      storicoAnnuncio: storicoMappato,  // ← così
     },
   }
 }
