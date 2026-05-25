@@ -87,7 +87,8 @@ export function useProperties() {
 
       // fetch storico solo per immobili con score OMI >= 60
       const ids = (propData ?? [])
-        .filter(p => scoreOMI(p, omiData ?? []).pt >= 60)
+        .filter(p => p.stato_immobile?.toLowerCase().includes('da ristrutturare'))
+        .filter(p => scoreOMI(p, omiData).pt >= 60)
         .map(p => p.id)
 
       let storicoData = []
