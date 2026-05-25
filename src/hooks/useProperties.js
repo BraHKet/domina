@@ -40,6 +40,30 @@ function mapRow(row) {
   }
 }
 
+async function fetchStoricoAll(ids) {
+  const PAGE = 1000
+  let from = 0
+  let allRows = []
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('barriera-di-milano-storico')
+      .select('id, data_scraping, prezzo_valore, data_creazione, stato_immobile, latitudine, longitudine')
+      .in('id', ids)
+      .range(from, from + PAGE - 1)
+
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) break
+
+    allRows = [...allRows, ...data]
+
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+
+  return allRows
+}
+
 export function useProperties() {
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
@@ -66,13 +90,11 @@ export function useProperties() {
         .filter(p => scoreOMI(p, omiData ?? []).pt >= 60)
         .map(p => p.id)
 
-      const { data: storicoData, error: storicoError } = await supabase
-        .from('barriera-di-milano-storico')
-        .select('id, data_scraping, prezzo_valore, data_creazione, stato_immobile, latitudine, longitudine')
-        .in('id', ids)
-
-      if (storicoError) {
-        setError(storicoError.message)
+      let storicoData = []
+      try {
+        storicoData = await fetchStoricoAll(ids)
+      } catch (e) {
+        setError(e.message)
         setLoading(false)
         return
       }

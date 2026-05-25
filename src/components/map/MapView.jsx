@@ -197,6 +197,9 @@ function ScoreDetailCard({ property, onClose }) {
             <p style={{ color: 'white', fontWeight: '700', fontSize: '14px', margin: 0, lineHeight: '1.3' }}>
               {property.address}
             </p>
+            <p style={{ color: '#6B7280', fontSize: '10px', margin: '4px 0 0 0', fontFamily: 'monospace' }}>
+              ID: {property.id}
+            </p>
           </div>
           <div style={{ textAlign: 'right', marginLeft: '16px' }}>
             <p style={{ color: '#22C55E', fontWeight: '800', fontSize: '32px', margin: 0, lineHeight: 1 }}>
