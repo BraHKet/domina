@@ -1,9 +1,5 @@
 import { haversineMeters } from './haversineMeters'
 
-const RAGGIO_METRI = 300
-
-
-
 /*
 Converte una data in formato ISO (`YYYY-MM-DD`). Gestisce due casi:
 
@@ -86,7 +82,7 @@ export function scoreVelocitaVendita(property, storicoRows) {
     else                       ptRibassi = 95
   }
 
-  const pt = Math.round(Math.sqrt(ptTempo * ptRibassi))
+  const pt = Math.round(Math.pow(ptTempo, 0.3) * Math.pow(ptRibassi, 0.7))
 
   const storicoMappato = storicoAnnuncio.map(r => ({
     data:   toISO(r.data_scraping),
