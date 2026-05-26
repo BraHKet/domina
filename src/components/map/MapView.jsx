@@ -2,19 +2,33 @@ import { useState } from 'react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 
+
+function coloreRibassi(numRibassi) {
+  if (numRibassi === 0) return '#22c55e'
+  if (numRibassi === 1) return '#eab308'
+  if (numRibassi === 2) return '#f97316'
+  if (numRibassi === 3) return '#fca5a5'
+  if (numRibassi === 4) return '#dc2626'
+  return '#111111'
+}
+
+
 // ── Icone mappa ───────────────────────────────────────────────────────────────
 
-const houseIcon = L.divIcon({
-  html: `<div style="width:28px;height:28px;background:#F59E0B;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-    </svg>
-  </div>`,
-  className: '',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -16],
-})
+
+function makeHouseIcon(colore) {
+  return L.divIcon({
+    html: `<div style="width:28px;height:28px;background:${colore};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+    </div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -16],
+  })
+}
 
 const greenDotIcon = L.divIcon({
   html: `<div style="width:13px;height:13px;background:#22C55E;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>`,
@@ -326,7 +340,6 @@ function PopupContent({ property, onScoreClick }) {
 // ── MapView ───────────────────────────────────────────────────────────────────
 
 const iconMap = {
-  house:        houseIcon,
   'green-dot':  greenDotIcon,
   'orange-dot': orangeDotIcon,
 }
@@ -343,7 +356,7 @@ export default function MapView({
   className = '',
 }) {
   const [scoreProperty, setScoreProperty] = useState(null)
-  const icon = iconMap[markerType] ?? houseIcon
+  const icon = iconMap[markerType] ?? greenDotIcon
 
   return (
     <>
@@ -360,7 +373,14 @@ export default function MapView({
         />
 
         {markers.map(p => (
-          <Marker key={p.id} position={[p.lat, p.lng]} icon={icon}>
+          <Marker
+            key={p.id}
+            position={[p.lat, p.lng]}
+            icon={markerType === 'house'
+              ? makeHouseIcon(coloreRibassi(p.scoreDettaglio?.velocita?.meta?.numRibassi ?? 0))
+              : icon
+            }
+          >
             <Popup closeButton={false}>
               <PopupContent property={p} onScoreClick={() => setScoreProperty(p)} />
             </Popup>
