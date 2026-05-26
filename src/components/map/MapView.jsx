@@ -265,7 +265,7 @@ function ScoreDetailCard({ property, onClose }) {
 
 function PopupContent({ property, onScoreClick }) {
   return (
-    <div style={{ padding: '10px', minWidth: '180px', maxWidth: '200px' }}>
+    <div style={{ padding: '10px', minWidth: '260px', maxWidth: '300px' }}>
       {/* Immagine + indirizzo + prezzo */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
         <div
@@ -333,6 +333,7 @@ function PopupContent({ property, onScoreClick }) {
           <span style={{ color: '#16a34a', fontSize: '10px' }}>dettaglio →</span>
         </button>
       )}
+      <PriceChart storicoAnnuncio={property.scoreDettaglio?.velocita?.meta?.storicoAnnuncio} />
     </div>
   )
 }
