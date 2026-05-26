@@ -5,7 +5,7 @@ export function scoreOMI(property, omiRows) {
   const omiRow = omiRows.find(
     r => r.tipologia === 'Abitazioni civili' && r.stato_conservativo === 'Normale'
   )
-  if (!omiRow) return { pt: 0, meta: null }
+  if (!omiRow) throw new Error('OMI row not found for Abitazioni civili, Normale')
 
   const min = omiRow.prezzo_min
   const max = omiRow.prezzo_max
@@ -18,8 +18,8 @@ export function scoreOMI(property, omiRows) {
 
   // sigmoide: 100 / (1 + e^(k*x))
   // k controlla la ripidità della curva
-  const k = 4
-  const pt = Math.round(100 / (1 + Math.exp(k * x)))
+  const k = 1
+  const pt = Math.round(100 / (1 + Math.exp((k*x) + Math.log(2 / 3))))
 
   return {
     pt,
