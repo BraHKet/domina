@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { haversineMeters } from '../../lib/variables/haversineMeters'
+import { marcaVisto, toggleSeguito, isSeguito } from '../../lib/visti'
 
 // ── Icone marker ──────────────────────────────────────────────────────────────
 
@@ -31,11 +32,24 @@ function makePriceIcon(pricePerMq, isUnderThreshold) {
 
 // ── Popup ─────────────────────────────────────────────────────────────────────
 
-function PopupContent({ property }) {
+function PopupContent({ property, userId, onSeguito }) {
+  const [seguito, setSeguito] = useState(isSeguito(property.id))
+
+  useEffect(() => {
+    marcaVisto(property.id, userId)
+    onSeguito?.()
+  }, [])
+
+  function handleSegui() {
+    toggleSeguito(property.id, userId).then(ora => {
+      setSeguito(ora)
+      onSeguito?.()
+    })
+  }
+
   return (
     <div style={{ minWidth: '260px', maxWidth: '300px', overflow: 'hidden', borderRadius: '12px' }}>
 
-      {/* Immagine */}
       {property.imageUrl && (
         <div style={{ width: '100%', height: '140px', overflow: 'hidden', position: 'relative' }}>
           <img
@@ -43,12 +57,9 @@ function PopupContent({ property }) {
             alt=""
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
-          {/* Prezzo sovrapposto in basso a sinistra */}
           <div style={{
             position: 'absolute', bottom: '10px', left: '10px',
-            background: 'rgba(0,0,0,0.72)',
-            borderRadius: '8px', padding: '5px 10px',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(0,0,0,0.72)', borderRadius: '8px', padding: '5px 10px',
           }}>
             <span style={{ color: '#FBBF24', fontWeight: '800', fontSize: '18px' }}>
               {property.price ? `${(property.price / 1000).toFixed(0)}k €` : '—'}
@@ -64,7 +75,6 @@ function PopupContent({ property }) {
 
       <div style={{ padding: '12px 14px 14px' }}>
 
-        {/* Indirizzo + link */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
           <div style={{ flex: 1 }}>
             <p style={{ color: 'white', fontWeight: '700', fontSize: '13px', margin: '0 0 2px 0' }}>
@@ -75,8 +85,8 @@ function PopupContent({ property }) {
             </p>
           </div>
           {property.url && (
-            <a
-              href={property.url}
+            
+          <a    href={property.url}
               target="_blank"
               rel="noreferrer"
               style={{ color: '#60A5FA', fontSize: '11px', marginLeft: '8px', whiteSpace: 'nowrap' }}
@@ -86,7 +96,6 @@ function PopupContent({ property }) {
           )}
         </div>
 
-        {/* Prezzo anche se non c'è immagine */}
         {!property.imageUrl && (
           <div style={{ marginBottom: '10px' }}>
             <span style={{ color: '#FBBF24', fontWeight: '800', fontSize: '20px' }}>
@@ -100,7 +109,6 @@ function PopupContent({ property }) {
           </div>
         )}
 
-        {/* Griglia dettagli */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
           {[
             { label: 'Sup.',   value: property.size ? `${property.size} m²` : '—' },
@@ -114,30 +122,35 @@ function PopupContent({ property }) {
           ))}
         </div>
 
-        {/* Giorni sul mercato */}
         {property.giorniMercato !== null && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: '6px',
-            background: property.giorniMercato > 90
-              ? 'rgba(34,197,94,0.08)'
-              : 'rgba(255,255,255,0.04)',
+            background: property.giorniMercato > 90 ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
             border: `1px solid ${property.giorniMercato > 90 ? 'rgba(34,197,94,0.2)' : '#1F2937'}`,
-            borderRadius: '6px', padding: '5px 10px',
+            borderRadius: '6px', padding: '5px 10px', marginBottom: '10px',
           }}>
-            <span style={{ fontSize: '13px' }}>🕐</span>
-            <span style={{
-              color: property.giorniMercato > 90 ? '#22C55E' : '#9CA3AF',
-              fontSize: '12px', fontWeight: '600',
-            }}>
-              {property.giorniMercato} giorni sul mercato
+            <span style={{ color: property.giorniMercato > 90 ? '#22C55E' : '#9CA3AF', fontSize: '12px', fontWeight: '600' }}>
+              🕐 {property.giorniMercato} giorni sul mercato
             </span>
             {property.giorniMercato > 90 && (
-              <span style={{ color: '#16A34A', fontSize: '10px', marginLeft: '2px' }}>
-                · venditore motivato?
-              </span>
+              <span style={{ color: '#16A34A', fontSize: '10px', marginLeft: '2px' }}>· venditore motivato?</span>
             )}
           </div>
         )}
+
+        <button
+          onClick={handleSegui}
+          style={{
+            width: '100%', padding: '8px', borderRadius: '8px', cursor: 'pointer',
+            border: seguito ? '1px solid rgba(251,191,36,0.4)' : '1px solid #2d3748',
+            background: seguito ? 'rgba(251,191,36,0.08)' : 'transparent',
+            color: seguito ? '#FBBF24' : '#6B7280',
+            fontWeight: '600', fontSize: '12px', transition: 'all 0.15s',
+          }}
+        >
+          {seguito ? '★ Stai seguendo' : '☆ Segui annuncio'}
+        </button>
+
       </div>
     </div>
   )
@@ -194,16 +207,12 @@ function CircleDrawTool({ onCircleDrawn }) {
       drawingRef.current = false
       map.dragging.enable()
       map.scrollWheelZoom.enable()
-
       const cur = map.containerPointToLatLng(getPoint(e))
       const r = haversineMeters(
         startLatLngRef.current.lat, startLatLngRef.current.lng,
         cur.lat, cur.lng
       )
-
-      // rimuoviamo il preview nativo — ora ci pensa React con <Circle>
       if (previewRef.current) { previewRef.current.remove(); previewRef.current = null }
-
       if (r > 50) {
         onCircleDrawn({
           lat: startLatLngRef.current.lat,
@@ -235,11 +244,13 @@ function CircleDrawTool({ onCircleDrawn }) {
 // ── MapView ───────────────────────────────────────────────────────────────────
 
 export default function MapView({
+  userId,
+  onRefresh,
   center = [45.093, 7.685],
   zoom = 15,
   markers = [],
   zone = [],
-  pendingCircle = null,   // { lat, lng, radius } — cerchio in attesa di conferma
+  pendingCircle = null,
   drawMode = false,
   onCircleDrawn,
   height = '100%',
@@ -256,7 +267,6 @@ export default function MapView({
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
 
-      {/* Zone salvate */}
       {zone.map(z => (
         <Circle
           key={z.id}
@@ -266,7 +276,6 @@ export default function MapView({
         />
       ))}
 
-      {/* Cerchio pending — rimane visibile finché l'utente non salva o annulla */}
       {pendingCircle && (
         <Circle
           center={[pendingCircle.lat, pendingCircle.lng]}
@@ -275,7 +284,6 @@ export default function MapView({
         />
       )}
 
-      {/* Markers annunci */}
       {markers.map(p => {
         const zonaMatch = zone.find(z =>
           haversineMeters(p.lat, p.lng, z.center_lat, z.center_lng) <= z.radius_m
@@ -293,7 +301,7 @@ export default function MapView({
             icon={makePriceIcon(p.pricePerMq, isUnder)}
           >
             <Popup closeButton={false}>
-              <PopupContent property={p} />
+              <PopupContent property={p} userId={userId} onSeguito={onRefresh} />
             </Popup>
           </Marker>
         )
