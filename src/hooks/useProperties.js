@@ -3,12 +3,23 @@ import { supabase } from '../lib/supabase'
 import { calcolaTuttiGliScore } from '../lib/scoring'
 import { scoreOMI } from '../lib/variables/omi'
 
+function toISO(val) {
+  if (!val) return ''
+  const s = String(val).trim()
+  if (s.includes('/')) {
+    const [datePart] = s.split(' ')
+    const [d, m, y] = datePart.split('/')
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  return s.slice(0, 10)
+}
+
 function mapStato(stato) {
   if (!stato) return null
   const s = stato.toLowerCase()
   if (s.includes('ottim') || s.includes('ristrutturato')) return 'ristrutturato'
   if (s.includes('da ristrutturare'))                     return 'non-ristrutturato'
-  return null 
+  return null
 }
 
 function mapRow(row) {
@@ -35,6 +46,7 @@ function mapRow(row) {
       : null,
     score: row.scoring?.totale ?? null,
     scoreDettaglio: row.scoring?.dettaglio ?? null,
+    primaDataVista: row.primaDataVista ?? null,
     yearBuilt: null,
     imageCount: null,
   }
@@ -66,6 +78,7 @@ async function fetchStoricoAll(ids) {
 
 export function useProperties() {
   const [properties, setProperties] = useState([])
+  const [dateUniche, setDateUniche] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -85,7 +98,6 @@ export function useProperties() {
         return
       }
 
-      // fetch storico solo per immobili con score OMI >= 60
       const ids = (propData ?? [])
         .filter(p => p.stato_immobile?.toLowerCase().includes('da ristrutturare'))
         .filter(p => scoreOMI(p, omiData).pt >= 60)
@@ -100,11 +112,31 @@ export function useProperties() {
         return
       }
 
+      // date uniche ordinate
+      const date = [...new Set(storicoData.map(r => toISO(r.data_scraping)))]
+        .filter(Boolean).sort()
+      setDateUniche(date)
+
+      // per ogni proprietà, trova la prima data in cui compare nello storico
+      const primaDataPerId = {}
+      for (const r of storicoData) {
+        const id = String(r.id)
+        const iso = toISO(r.data_scraping)
+        if (!iso) continue
+        if (!primaDataPerId[id] || iso < primaDataPerId[id]) {
+          primaDataPerId[id] = iso
+        }
+      }
+
       const withScores = calcolaTuttiGliScore(
         propData    ?? [],
         omiData     ?? [],
         storicoData ?? [],
-      )
+      ).map(p => ({
+        ...p,
+        primaDataVista: primaDataPerId[String(p.id)] ?? null,
+      }))
+
       setProperties(withScores.map(mapRow))
       setLoading(false)
     }
@@ -112,5 +144,5 @@ export function useProperties() {
     fetchAll()
   }, [])
 
-  return { properties, loading, error }
+  return { properties, dateUniche, loading, error }
 }
