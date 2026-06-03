@@ -34,28 +34,49 @@ function makePriceIcon(pricePerMq, isUnderThreshold) {
 function PopupContent({ property }) {
   return (
     <div style={{ minWidth: '260px', maxWidth: '300px', overflow: 'hidden', borderRadius: '12px' }}>
+
+      {/* Immagine */}
       {property.imageUrl && (
-        <div style={{ width: '100%', height: '130px', overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: '140px', overflow: 'hidden', position: 'relative' }}>
           <img
             src={property.imageUrl}
             alt=""
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
+          {/* Prezzo sovrapposto in basso a sinistra */}
+          <div style={{
+            position: 'absolute', bottom: '10px', left: '10px',
+            background: 'rgba(0,0,0,0.72)',
+            borderRadius: '8px', padding: '5px 10px',
+            backdropFilter: 'blur(4px)',
+          }}>
+            <span style={{ color: '#FBBF24', fontWeight: '800', fontSize: '18px' }}>
+              {property.price ? `${(property.price / 1000).toFixed(0)}k €` : '—'}
+            </span>
+            {property.pricePerMq && (
+              <span style={{ color: '#9CA3AF', fontSize: '11px', marginLeft: '6px' }}>
+                {property.pricePerMq.toLocaleString('it')} €/m²
+              </span>
+            )}
+          </div>
         </div>
       )}
-      <div style={{ padding: '14px' }}>
+
+      <div style={{ padding: '12px 14px 14px' }}>
+
+        {/* Indirizzo + link */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
           <div style={{ flex: 1 }}>
             <p style={{ color: 'white', fontWeight: '700', fontSize: '13px', margin: '0 0 2px 0' }}>
               {property.address}
             </p>
-            <p style={{ color: '#9CA3AF', fontSize: '11px', margin: 0 }}>
+            <p style={{ color: '#6B7280', fontSize: '11px', margin: 0 }}>
               {property.stato}
             </p>
           </div>
           {property.url && (
-            
-          <a    href={property.url}
+            <a
+              href={property.url}
               target="_blank"
               rel="noreferrer"
               style={{ color: '#60A5FA', fontSize: '11px', marginLeft: '8px', whiteSpace: 'nowrap' }}
@@ -64,21 +85,59 @@ function PopupContent({ property }) {
             </a>
           )}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+
+        {/* Prezzo anche se non c'è immagine */}
+        {!property.imageUrl && (
+          <div style={{ marginBottom: '10px' }}>
+            <span style={{ color: '#FBBF24', fontWeight: '800', fontSize: '20px' }}>
+              {property.price ? `${(property.price / 1000).toFixed(0)}k €` : '—'}
+            </span>
+            {property.pricePerMq && (
+              <span style={{ color: '#6B7280', fontSize: '11px', marginLeft: '6px' }}>
+                {property.pricePerMq.toLocaleString('it')} €/m²
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Griglia dettagli */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
           {[
-            { label: 'Prezzo',  value: property.price ? `${(property.price / 1000).toFixed(0)}k €` : '—' },
-            { label: '€/m²',   value: property.pricePerMq ? `${property.pricePerMq.toLocaleString('it')}` : '—' },
             { label: 'Sup.',   value: property.size ? `${property.size} m²` : '—' },
             { label: 'Locali', value: property.rooms ?? '—' },
             { label: 'Piano',  value: property.floor ?? '—' },
-            { label: 'Asc.',   value: property.hasElevator ? 'Sì' : 'No' },
           ].map(({ label, value }) => (
             <div key={label}>
-              <p style={{ color: '#6B7280', fontSize: '9px', margin: '0 0 1px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-              <p style={{ color: 'white', fontSize: '11px', fontWeight: '600', margin: 0 }}>{value}</p>
+              <p style={{ color: '#4B5563', fontSize: '9px', margin: '0 0 1px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+              <p style={{ color: 'white', fontSize: '12px', fontWeight: '600', margin: 0 }}>{value}</p>
             </div>
           ))}
         </div>
+
+        {/* Giorni sul mercato */}
+        {property.giorniMercato !== null && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            background: property.giorniMercato > 90
+              ? 'rgba(34,197,94,0.08)'
+              : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${property.giorniMercato > 90 ? 'rgba(34,197,94,0.2)' : '#1F2937'}`,
+            borderRadius: '6px', padding: '5px 10px',
+          }}>
+            <span style={{ fontSize: '13px' }}>🕐</span>
+            <span style={{
+              color: property.giorniMercato > 90 ? '#22C55E' : '#9CA3AF',
+              fontSize: '12px', fontWeight: '600',
+            }}>
+              {property.giorniMercato} giorni sul mercato
+            </span>
+            {property.giorniMercato > 90 && (
+              <span style={{ color: '#16A34A', fontSize: '10px', marginLeft: '2px' }}>
+                · venditore motivato?
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
