@@ -1,284 +1,246 @@
+import { useEffect, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import { haversineMeters } from '../../lib/variables/haversineMeters'
 
+// ── Icone marker ──────────────────────────────────────────────────────────────
 
-function coloreRibassi(numRibassi) {
-  if (numRibassi === 0) return '#22c55e'
-  if (numRibassi === 1) return '#eab308'
-  if (numRibassi === 2) return '#f97316'
-  if (numRibassi === 3) return '#fca5a5'
-  if (numRibassi === 4) return '#dc2626'
-  return '#111111'
-}
-
-
-// ── Icone mappa ───────────────────────────────────────────────────────────────
-
-
-function makeHouseIcon(colore) {
+function makePriceIcon(pricePerMq, isUnderThreshold) {
+  const bg = isUnderThreshold ? '#22C55E' : '#F59E0B'
+  const label = pricePerMq ? `${(pricePerMq / 1000).toFixed(1)}k` : '?'
   return L.divIcon({
-    html: `<div style="width:28px;height:28px;background:${colore};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-      </svg>
-    </div>`,
     className: '',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -16],
+    html: `<div style="
+      background:${bg};
+      color:#000;
+      font-size:9px;
+      font-weight:700;
+      padding:3px 6px;
+      border-radius:6px;
+      white-space:nowrap;
+      box-shadow:0 2px 6px rgba(0,0,0,0.35);
+      border:1.5px solid rgba(255,255,255,0.5);
+      line-height:1.2;
+    ">${label}</div>`,
+    iconSize: [40, 20],
+    iconAnchor: [20, 10],
+    popupAnchor: [0, -14],
   })
 }
 
-const greenDotIcon = L.divIcon({
-  html: `<div style="width:13px;height:13px;background:#22C55E;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>`,
-  className: '',
-  iconSize: [13, 13],
-  iconAnchor: [6, 6],
-  popupAnchor: [6, -6],
-})
-
-const orangeDotIcon = L.divIcon({
-  html: `<div style="width:13px;height:13px;background:#F97316;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>`,
-  className: '',
-  iconSize: [13, 13],
-  iconAnchor: [6, 6],
-  popupAnchor: [6, -6],
-})
-
-const yellowDotIcon = L.divIcon({
-  html: `<div style="width:22px;height:22px;background:#F59E0B;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>`,
-  className: '',
-  iconSize: [22, 22],
-  iconAnchor: [11, 11],
-  popupAnchor: [0, -13],
-})
-
-// ── Grafico storico prezzi ────────────────────────────────────────────────────
-
-function PriceChart({ storicoAnnuncio }) {
-  if (!storicoAnnuncio?.length || storicoAnnuncio.length < 2) return null
-
-  const W = 312, H = 80, PAD = 10
-  const prezzi = storicoAnnuncio.map(r => r.prezzo)
-  const minP = Math.min(...prezzi)
-  const maxP = Math.max(...prezzi)
-  const range = maxP - minP || 1
-
-  const n = storicoAnnuncio.length
-  const xStep = (W - PAD * 2) / Math.max(n - 1, 1)
-  const toX = i => PAD + i * xStep
-  const toY = p => PAD + (1 - (p - minP) / range) * (H - PAD * 2 - 14)
-
-  const linePath = storicoAnnuncio
-    .map((r, i) => `${i === 0 ? 'M' : 'L'}${toX(i)},${toY(r.prezzo)}`)
-    .join(' ')
-
-  const areaPath =
-    linePath +
-    ` L${toX(n - 1)},${H - 14} L${toX(0)},${H - 14} Z`
-
-  const formatDate = d => {
-    if (!d) return ''
-    const dt = new Date(d)
-    return `${dt.getDate()}/${dt.getMonth() + 1}`
-  }
-
-  return (
-    <div style={{ marginTop: '12px' }}>
-      <p style={{
-        color: '#6B7280', fontSize: '10px', margin: '0 0 6px 0',
-        textTransform: 'uppercase', letterSpacing: '0.05em',
-      }}>
-        Storico prezzo annuncio
-      </p>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: `${H}px` }}>
-        {/* Area fill */}
-        <path d={areaPath} fill="rgba(34,197,94,0.08)" />
-        {/* Linea */}
-        <path d={linePath} fill="none" stroke="#22C55E" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-        {/* Punti + label */}
-        {storicoAnnuncio.map((r, i) => {
-          const isRibasso = i > 0 && r.prezzo < storicoAnnuncio[i - 1].prezzo
-          const cx = toX(i)
-          const cy = toY(r.prezzo)
-          return (
-            <g key={i}>
-              <circle cx={cx} cy={cy} r={3} fill={isRibasso ? '#EF4444' : '#22C55E'} />
-              {/* label prezzo sopra il punto */}
-              <text
-                x={cx} y={cy - 6}
-                textAnchor="middle" fontSize="7.5" fill="#D1D5DB"
-                fontWeight="600"
-              >
-                {(r.prezzo / 1000).toFixed(0)}k
-              </text>
-              {/* label data sotto */}
-              <text
-                x={cx} y={H - 2}
-                textAnchor="middle" fontSize="7" fill="#4B5563"
-              >
-                {formatDate(r.data)}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
-    </div>
-  )
-}
-
-// ── PopupContent ──────────────────────────────────────────────────────────────
+// ── Popup ─────────────────────────────────────────────────────────────────────
 
 function PopupContent({ property }) {
-  const d = property.scoreDettaglio
-
-  const sottomercato = d ? Math.round((d.omi.pt / d.omi.max) * 100) : null
-  const venditoreMotivato = d ? Math.round((d.velocita.pt / d.velocita.max) * 100) : null
-  const scoreColor = (val) => val >= 70 ? '#22C55E' : val >= 40 ? '#F59E0B' : '#EF4444'
-
   return (
-    <div style={{ padding: '20px', minWidth: '300px', maxWidth: '320px' }}>
-
-      {/* Header: immagine + indirizzo/prezzo + score totale */}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-        <div
-          onClick={() => property.url && window.open(property.url, '_blank')}
-          style={{ width: '44px', height: '36px', borderRadius: '6px', background: '#374151', flexShrink: 0, overflow: 'hidden', cursor: property.url ? 'pointer' : 'default' }}
-        >
-          {property.imageUrl
-            ? <img src={property.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none' }} />
-            : <div style={{ width: '100%', height: '100%', background: '#374151' }} />
-          }
+    <div style={{ minWidth: '260px', maxWidth: '300px', overflow: 'hidden', borderRadius: '12px' }}>
+      {property.imageUrl && (
+        <div style={{ width: '100%', height: '130px', overflow: 'hidden' }}>
+          <img
+            src={property.imageUrl}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
         </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ color: '#9CA3AF', fontSize: '10px', margin: '0 0 1px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px'}}>
-            {property.address}
-          </p>
-          <p style={{ color: '#F59E0B', fontWeight: '700', fontSize: '14px', margin: 0 }}>
-            €{property.price?.toLocaleString('it-IT')}
-          </p>
+      )}
+      <div style={{ padding: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: 'white', fontWeight: '700', fontSize: '13px', margin: '0 0 2px 0' }}>
+              {property.address}
+            </p>
+            <p style={{ color: '#9CA3AF', fontSize: '11px', margin: 0 }}>
+              {property.stato}
+            </p>
+          </div>
+          {property.url && (
+            
+          <a    href={property.url}
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: '#60A5FA', fontSize: '11px', marginLeft: '8px', whiteSpace: 'nowrap' }}
+            >
+              Apri →
+            </a>
+          )}
         </div>
-        {property.score !== null && (
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <p style={{ color: scoreColor(property.score), fontWeight: '800', fontSize: '22px', margin: 0, lineHeight: 1 }}>{property.score}</p>
-            <p style={{ color: '#6B7280', fontSize: '9px', margin: 0 }}>/100</p>
-          </div>
-        )}
-      </div>
-
-      {/* Riga info */}
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid #374151', paddingTop: '18px', marginBottom: '18px'}}>
-        {[
-          { label: 'Superficie', value: property.size ? `${property.size} m²` : '—' },
-          { label: 'Locali',     value: property.rooms ?? '—' },
-          { label: 'Piano',      value: property.floor ?? '—' },
-          { label: 'Ascensore',  value: property.hasElevator ? 'Sì' : 'No' },
-          ...(property.pricePerMq ? [{ label: '€/m²', value: property.pricePerMq }] : []),
-        ].map(({ label, value }) => (
-          <div key={label}>
-            <p style={{ color: '#6B7280', fontSize: '9px', margin: '0 0 1px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-            <p style={{ color: 'white', fontSize: '11px', fontWeight: '600', margin: 0 }}>{value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Score separati */}
-      {d && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #374151', paddingTop: '18px', marginBottom: '18px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
           {[
-            { label: 'Sottomercato',       val: sottomercato },
-            { label: 'Venditore motivato', val: venditoreMotivato },
-          ].map(({ label, val }) => (
+            { label: 'Prezzo',  value: property.price ? `${(property.price / 1000).toFixed(0)}k €` : '—' },
+            { label: '€/m²',   value: property.pricePerMq ? `${property.pricePerMq.toLocaleString('it')}` : '—' },
+            { label: 'Sup.',   value: property.size ? `${property.size} m²` : '—' },
+            { label: 'Locali', value: property.rooms ?? '—' },
+            { label: 'Piano',  value: property.floor ?? '—' },
+            { label: 'Asc.',   value: property.hasElevator ? 'Sì' : 'No' },
+          ].map(({ label, value }) => (
             <div key={label}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <p style={{ color: '#D1D5DB', fontSize: '11px', fontWeight: '600', margin: 0 }}>{label}</p>
-                <p style={{ color: scoreColor(val), fontWeight: '700', fontSize: '12px', margin: 0}}>{val}/100</p>
-              </div>
-              <div style={{ height: '3px', background: '#374151', borderRadius: '2px' }}>
-                <div style={{ width: `${val}%`, height: '100%', background: scoreColor(val), borderRadius: '2px' }} />
-              </div>
+              <p style={{ color: '#6B7280', fontSize: '9px', margin: '0 0 1px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+              <p style={{ color: 'white', fontSize: '11px', fontWeight: '600', margin: 0 }}>{value}</p>
             </div>
           ))}
         </div>
-      )}
-
-      <PriceChart storicoAnnuncio={property.scoreDettaglio?.velocita?.meta?.storicoAnnuncio} />
+      </div>
     </div>
   )
 }
 
-// ── MapView ───────────────────────────────────────────────────────────────────
+// ── Tool disegno cerchio ──────────────────────────────────────────────────────
 
-const iconMap = {
-  'green-dot':  greenDotIcon,
-  'orange-dot': orangeDotIcon,
+function CircleDrawTool({ onCircleDrawn }) {
+  const map = useMap()
+  const drawingRef = useRef(false)
+  const startLatLngRef = useRef(null)
+  const previewRef = useRef(null)
+
+  useEffect(() => {
+    if (!onCircleDrawn) return
+
+    const container = map.getContainer()
+    container.style.cursor = 'crosshair'
+
+    function getPoint(e) {
+      const rect = container.getBoundingClientRect()
+      return L.point(e.clientX - rect.left, e.clientY - rect.top)
+    }
+
+    function onMouseDown(e) {
+      if (e.button !== 0) return
+      e.stopPropagation()
+      map.dragging.disable()
+      map.scrollWheelZoom.disable()
+      drawingRef.current = true
+      startLatLngRef.current = map.containerPointToLatLng(getPoint(e))
+    }
+
+    function onMouseMove(e) {
+      if (!drawingRef.current || !startLatLngRef.current) return
+      const cur = map.containerPointToLatLng(getPoint(e))
+      const r = haversineMeters(
+        startLatLngRef.current.lat, startLatLngRef.current.lng,
+        cur.lat, cur.lng
+      )
+      if (previewRef.current) previewRef.current.remove()
+      previewRef.current = L.circle(startLatLngRef.current, {
+        radius: r,
+        color: '#60A5FA',
+        fillColor: '#60A5FA',
+        fillOpacity: 0.12,
+        weight: 2,
+        dashArray: '6,4',
+      }).addTo(map)
+    }
+
+    function onMouseUp(e) {
+      if (!drawingRef.current || !startLatLngRef.current) return
+      drawingRef.current = false
+      map.dragging.enable()
+      map.scrollWheelZoom.enable()
+
+      const cur = map.containerPointToLatLng(getPoint(e))
+      const r = haversineMeters(
+        startLatLngRef.current.lat, startLatLngRef.current.lng,
+        cur.lat, cur.lng
+      )
+
+      // rimuoviamo il preview nativo — ora ci pensa React con <Circle>
+      if (previewRef.current) { previewRef.current.remove(); previewRef.current = null }
+
+      if (r > 50) {
+        onCircleDrawn({
+          lat: startLatLngRef.current.lat,
+          lng: startLatLngRef.current.lng,
+          radius: Math.round(r),
+        })
+      }
+      startLatLngRef.current = null
+    }
+
+    container.addEventListener('mousedown', onMouseDown)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+
+    return () => {
+      container.style.cursor = ''
+      map.dragging.enable()
+      map.scrollWheelZoom.enable()
+      container.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+      if (previewRef.current) { previewRef.current.remove(); previewRef.current = null }
+    }
+  }, [map, onCircleDrawn])
+
+  return null
 }
+
+// ── MapView ───────────────────────────────────────────────────────────────────
 
 export default function MapView({
   center = [45.093, 7.685],
   zoom = 15,
   markers = [],
-  selectedProperty = null,
-  markerType = 'house',
-  cantieri = [],
-  zoneRischio = [],
-  height = '260px',
-  className = '',
+  zone = [],
+  pendingCircle = null,   // { lat, lng, radius } — cerchio in attesa di conferma
+  drawMode = false,
+  onCircleDrawn,
+  height = '100%',
 }) {
-
-  const icon = iconMap[markerType] ?? greenDotIcon
-
   return (
-    <>
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        style={{ height, width: '100%', borderRadius: '14px' }}
-        className={className}
-        zoomControl={markerType === 'house'}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        />
+    <MapContainer
+      center={center}
+      zoom={zoom}
+      style={{ height, width: '100%', borderRadius: '14px' }}
+      zoomControl={true}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+      />
 
-        {markers.map(p => (
+      {/* Zone salvate */}
+      {zone.map(z => (
+        <Circle
+          key={z.id}
+          center={[z.center_lat, z.center_lng]}
+          radius={z.radius_m}
+          pathOptions={{ color: '#60A5FA', fillColor: '#60A5FA', fillOpacity: 0.08, weight: 2 }}
+        />
+      ))}
+
+      {/* Cerchio pending — rimane visibile finché l'utente non salva o annulla */}
+      {pendingCircle && (
+        <Circle
+          center={[pendingCircle.lat, pendingCircle.lng]}
+          radius={pendingCircle.radius}
+          pathOptions={{ color: '#60A5FA', fillColor: '#60A5FA', fillOpacity: 0.12, weight: 2, dashArray: '6,4' }}
+        />
+      )}
+
+      {/* Markers annunci */}
+      {markers.map(p => {
+        const zonaMatch = zone.find(z =>
+          haversineMeters(p.lat, p.lng, z.center_lat, z.center_lng) <= z.radius_m
+        )
+        const isUnder = zonaMatch && p.pricePerMq
+          ? p.pricePerMq <= zonaMatch.max_euro_mq * 1.15
+          : false
+
+        if (zone.length > 0 && !zonaMatch) return null
+
+        return (
           <Marker
             key={p.id}
             position={[p.lat, p.lng]}
-            icon={markerType === 'house'
-              ? makeHouseIcon(coloreRibassi(p.scoreDettaglio?.velocita?.meta?.numRibassi ?? 0))
-              : icon
-            }
+            icon={makePriceIcon(p.pricePerMq, isUnder)}
           >
             <Popup closeButton={false}>
               <PopupContent property={p} />
             </Popup>
           </Marker>
-        ))}
+        )
+      })}
 
-        {selectedProperty && (
-          <Marker
-            position={[selectedProperty.lat, selectedProperty.lng]}
-            icon={yellowDotIcon}
-            eventHandlers={{ add: e => e.target.openPopup() }}
-          >
-            <Popup closeButton={false} autoClose={false} closeOnClick={false}>
-              <PopupContent property={selectedProperty} />
-            </Popup>
-          </Marker>
-        )}
-
-        {cantieri.map((c, i) => (
-          <Circle key={i} center={[c.lat, c.lng]} radius={80}
-            pathOptions={{ color: '#6B7280', fillColor: '#9CA3AF', fillOpacity: 0.5, weight: 1 }} />
-        ))}
-
-        {zoneRischio.map((z, i) => (
-          <Circle key={i} center={[z.lat, z.lng]} radius={z.radius}
-            pathOptions={{ color: '#FCA5A5', fillColor: '#FCA5A5', fillOpacity: 0.3, weight: 0 }} />
-        ))}
-      </MapContainer>
-    </>
+      {drawMode && <CircleDrawTool onCircleDrawn={onCircleDrawn} />}
+    </MapContainer>
   )
 }
