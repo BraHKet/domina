@@ -14,11 +14,9 @@ export default function Dashboard() {
 
   const [drawMode, setDrawMode]           = useState(false)
   const [pendingCircle, setPendingCircle] = useState(null)
-  const [inputEuroMq, setInputEuroMq]     = useState('')
   const [inputLabel, setInputLabel]       = useState('')
   const [inputInclAste, setInputInclAste] = useState(true)
-  const [editingId, setEditingId]         = useState(null)
-  const [editEuroMq, setEditEuroMq]       = useState('')
+  const [inputStato, setInputStato]       = useState('non-ristrutturato')  // ← nuovo
   const [soloNuovi, setSoloNuovi]         = useState(false)
   const [soloSeguiti, setSoloSeguiti]     = useState(false)
   const [vistiSnapshot, setVistiSnapshot] = useState(null)
@@ -26,37 +24,45 @@ export default function Dashboard() {
   function handleCircleDrawn(circle) {
     setDrawMode(false)
     setPendingCircle(circle)
-    setInputEuroMq('')
     setInputLabel('')
     setInputInclAste(true)
+    setInputStato('non-ristrutturato')
   }
 
   async function handleSalvaZona() {
-    const mq = parseInt(inputEuroMq)
-    if (!mq || mq <= 0) return
-    await addZona({
-      label:        inputLabel || null,
-      center_lat:   pendingCircle.lat,
-      center_lng:   pendingCircle.lng,
-      radius_m:     pendingCircle.radius,
-      max_euro_mq:  mq,
-      includi_aste: inputInclAste,
-    })
-    setPendingCircle(null)
-    setInputEuroMq('')
-    setInputLabel('')
-    setInputInclAste(true)
-  }
-
-  async function handleAggiorna(id) {
-    const mq = parseInt(editEuroMq)
-    if (!mq || mq <= 0) return
-    await updateZona(id, { max_euro_mq: mq })
-    setEditingId(null)
-    setEditEuroMq('')
-  }
+  const { data, error } = await addZona({
+    label:        inputLabel || null,
+    center_lat:   pendingCircle.lat,
+    center_lng:   pendingCircle.lng,
+    radius_m:     pendingCircle.radius,
+    stato_filtro: inputStato,
+    includi_aste: inputInclAste,
+  })
+  console.log('addZona result:', { data, error })
+  if (error) return  // ← non resettare se c'è errore
+  setPendingCircle(null)
+  setInputLabel('')
+  setInputInclAste(true)
+  setInputStato('non-ristrutturato')
+}
 
   const hasZone = zone.length > 0
+
+  function mediaZona(z) {
+    const statoFiltro = z.stato_filtro ?? 'non-ristrutturato'
+    const annunci = properties.filter(p => {
+      if (!p.pricePerMq) return false
+      const dist = Math.sqrt(
+        Math.pow((p.lat - z.center_lat) * 111320, 2) +
+        Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
+      )
+      if (dist > z.radius_m) return false
+      if (statoFiltro === 'entrambi') return p.type === 'non-ristrutturato' || p.type === 'ristrutturato'
+      return p.type === statoFiltro
+    })
+    if (annunci.length === 0) return null
+    return annunci.reduce((sum, p) => sum + p.pricePerMq, 0) / annunci.length
+  }
 
   function dentroZone(p) {
     return zone.some(z => {
@@ -64,28 +70,39 @@ export default function Dashboard() {
         Math.pow((p.lat - z.center_lat) * 111320, 2) +
         Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
       )
+      if (dist > z.radius_m) return false
       const astaOk = z.includi_aste ? true : !p.isAsta
-      return dist <= z.radius_m && p.pricePerMq && p.pricePerMq <= z.max_euro_mq * 1.15 && astaOk
+      if (!astaOk) return false
+      const statoFiltro = z.stato_filtro ?? 'non-ristrutturato'
+      const statoOk = statoFiltro === 'entrambi'
+        ? (p.type === 'non-ristrutturato' || p.type === 'ristrutturato')
+        : p.type === statoFiltro
+      if (!statoOk) return false
+      const media = mediaZona(z)
+      if (media === null) return false
+      return p.pricePerMq != null && p.pricePerMq <= media
     })
   }
 
   const vistiPerFiltro = (soloNuovi && vistiSnapshot) ? vistiSnapshot : visti
 
   const visibili = properties.filter(p => {
-  if (soloSeguiti) return seguiti.has(String(p.id))
-  if (!p.pricePerMq) return false
-  if (!hasZone) return false
-  if (!dentroZone(p)) return false
-  if (soloNuovi && vistiPerFiltro.has(String(p.id))) return false
-  return true
-})
+    if (soloSeguiti) return seguiti.has(String(p.id))
+    if (!p.pricePerMq) return false
+    if (!hasZone) return false
+    if (!dentroZone(p)) return false
+    if (soloNuovi && vistiPerFiltro.has(String(p.id))) return false
+    return true
+  })
 
   const nuoviCount   = hasZone ? properties.filter(p => p.pricePerMq && dentroZone(p) && !visti.has(String(p.id))).length : 0
   const seguitiCount = properties.filter(p => seguiti.has(String(p.id))).length
-
+console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ id: p.id, type: p.type, stato_immobile: p.stato_immobile, pricePerMq: p.pricePerMq })))
   if (loading || zoneLoading) return (
     <div style={{ padding: '32px', color: '#9CA3AF' }}>Caricamento...</div>
   )
+
+  const statoLabel = (s) => s === 'non-ristrutturato' ? 'Da ristrutturare' : s === 'ristrutturato' ? 'Abitabile' : 'Entrambi'
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
@@ -185,9 +202,31 @@ export default function Dashboard() {
                 Nuova zona · {Math.round(pendingCircle.radius)} m
               </p>
               <input placeholder="Nome zona (opzionale)" value={inputLabel} onChange={e => setInputLabel(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid #2d3748', borderRadius: '8px', color: 'white', padding: '8px 10px', fontSize: '12px', marginBottom: '8px', boxSizing: 'border-box', outline: 'none' }} />
-              <input type="number" placeholder="Max €/m²" value={inputEuroMq} onChange={e => setInputEuroMq(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid #2d3748', borderRadius: '8px', color: 'white', padding: '8px 10px', fontSize: '12px', marginBottom: '10px', boxSizing: 'border-box', outline: 'none' }} />
+                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid #2d3748', borderRadius: '8px', color: 'white', padding: '8px 10px', fontSize: '12px', marginBottom: '12px', boxSizing: 'border-box', outline: 'none' }} />
+
+              {/* Selector stato */}
+              <p style={{ color: '#6B7280', fontSize: '10px', margin: '0 0 6px 0' }}>Tipo immobili</p>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+                {[
+                  { val: 'non-ristrutturato', label: 'Da ristr.' },
+                  { val: 'ristrutturato',     label: 'Abitabile' },
+                  { val: 'entrambi',          label: 'Entrambi'  },
+                ].map(({ val, label }) => (
+                  <button
+                    key={val}
+                    onClick={() => setInputStato(val)}
+                    style={{
+                      flex: 1, padding: '7px 4px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      background: inputStato === val ? '#3B82F6' : 'rgba(255,255,255,0.04)',
+                      color: inputStato === val ? 'white' : '#6B7280',
+                      fontWeight: '600', fontSize: '10px',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', cursor: 'pointer' }}>
                 <input type="checkbox" checked={inputInclAste} onChange={e => setInputInclAste(e.target.checked)}
                   style={{ accentColor: '#22C55E', width: '13px', height: '13px', flexShrink: 0 }} />
@@ -229,25 +268,14 @@ export default function Dashboard() {
                 <button onClick={() => removeZona(z.id)}
                   style={{ background: 'none', border: 'none', color: '#374151', cursor: 'pointer', fontSize: '16px', padding: 0, lineHeight: 1 }}>×</button>
               </div>
-              {editingId === z.id ? (
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px' }}>
-                  <input type="number" value={editEuroMq} onChange={e => setEditEuroMq(e.target.value)} placeholder="€/m²"
-                    style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid #2d3748', borderRadius: '6px', color: 'white', padding: '6px 8px', fontSize: '12px', outline: 'none' }} />
-                  <button onClick={() => handleAggiorna(z.id)}
-                    style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#22C55E', color: '#000', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>OK</button>
-                  <button onClick={() => setEditingId(null)}
-                    style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #2d3748', background: 'transparent', color: '#6B7280', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '6px', padding: '5px 10px' }}>
+                  <span style={{ color: '#60A5FA', fontWeight: '700', fontSize: '12px' }}>
+                    {statoLabel(z.stato_filtro ?? 'non-ristrutturato')}
+                  </span>
+                  <span style={{ color: '#374151', fontSize: '10px', marginLeft: '5px' }}>· sotto media</span>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '6px', padding: '5px 10px' }}>
-                    <span style={{ color: '#22C55E', fontWeight: '700', fontSize: '13px' }}>≤ {z.max_euro_mq.toLocaleString('it')} €/m²</span>
-                    <span style={{ color: '#374151', fontSize: '10px', marginLeft: '5px' }}>+15% tratt.</span>
-                  </div>
-                  <button onClick={() => { setEditingId(z.id); setEditEuroMq(String(z.max_euro_mq)) }}
-                    style={{ background: 'none', border: 'none', color: '#374151', cursor: 'pointer', fontSize: '11px' }}>modifica</button>
-                </div>
-              )}
+              </div>
               <p style={{ color: z.includi_aste ? '#22C55E' : '#4B5563', fontSize: '10px', margin: 0, fontWeight: '600' }}>
                 {z.includi_aste ? '✓ Aste incluse' : '✗ Aste escluse'}
               </p>

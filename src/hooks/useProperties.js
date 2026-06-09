@@ -8,6 +8,11 @@ function mapRow(row) {
     ? Math.floor((oggi - dataCreazione) / (1000 * 60 * 60 * 24))
     : null
 
+  const s = row.stato_immobile?.toLowerCase() ?? ''
+  const type = s.includes('da ristrutturare') ? 'non-ristrutturato'
+             : (s.includes('ottim') || s.includes('ristrutturato') || s.includes('abitabile') || s.includes('buono')) ? 'ristrutturato'
+             : null
+
   return {
     id:           row.id,
     address:      row.indirizzo ?? '',
@@ -20,13 +25,13 @@ function mapRow(row) {
     lat:          row.latitudine ?? 45.093,
     lng:          row.longitudine ?? 7.685,
     stato:        row.stato_immobile ?? null,
+    type,                                      // ← aggiunto
     imageUrl:     row.immagine_stanza ?? null,
     pricePerMq:   row.prezzo_mq ?? null,
     url:          row.url ?? null,
     giorniMercato,
   }
 }
-
 export function useProperties() {
   const [properties, setProperties] = useState([])
   const [loading, setLoading]       = useState(true)
