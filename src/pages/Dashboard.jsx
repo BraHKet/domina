@@ -70,7 +70,8 @@ export default function Dashboard() {
 
   const visibili = properties.filter(p => {
     if (!p.pricePerMq) return false
-    if (hasZone && !dentroZone(p)) return false
+    if (!hasZone) return false                     // ← aggiunta questa riga
+    if (!dentroZone(p)) return false
     if (soloNuovi   && visti.has(String(p.id)))    return false
     if (soloSeguiti && !seguiti.has(String(p.id))) return false
     return true
@@ -315,3 +316,4 @@ export default function Dashboard() {
     </div>
   )
 }
+
