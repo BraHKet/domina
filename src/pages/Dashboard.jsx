@@ -76,7 +76,7 @@ export default function Dashboard() {
     if (!hasZone) return false
     if (!dentroZone(p)) return false
     if (soloNuovi   && vistiPerFiltro.has(String(p.id))) return false
-    if (soloSeguiti && !seguiti.has(String(p.id)))       return false
+    if (soloSeguiti && (!seguiti.has(String(p.id)) || !dentroZone(p))) return false
     return true
   })
 
