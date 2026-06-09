@@ -72,13 +72,13 @@ export default function Dashboard() {
   const vistiPerFiltro = (soloNuovi && vistiSnapshot) ? vistiSnapshot : visti
 
   const visibili = properties.filter(p => {
-    if (!p.pricePerMq) return false
-    if (!hasZone) return false
-    if (!dentroZone(p)) return false
-    if (soloNuovi   && vistiPerFiltro.has(String(p.id))) return false
-    if (soloSeguiti && (!seguiti.has(String(p.id)) || !dentroZone(p))) return false
-    return true
-  })
+  if (soloSeguiti) return seguiti.has(String(p.id))
+  if (!p.pricePerMq) return false
+  if (!hasZone) return false
+  if (!dentroZone(p)) return false
+  if (soloNuovi && vistiPerFiltro.has(String(p.id))) return false
+  return true
+})
 
   const nuoviCount   = hasZone ? properties.filter(p => p.pricePerMq && dentroZone(p) && !visti.has(String(p.id))).length : 0
   const seguitiCount = properties.filter(p => seguiti.has(String(p.id))).length

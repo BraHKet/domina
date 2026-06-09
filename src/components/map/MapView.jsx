@@ -290,7 +290,7 @@ export default function MapView({
           haversineMeters(p.lat, p.lng, z.center_lat, z.center_lng) <= z.radius_m
         )
 
-        if (zone.length > 0 && !zonaMatch) return null
+        
 
         const isNuovo = !visti.has(String(p.id))
 
