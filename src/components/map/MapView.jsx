@@ -7,8 +7,8 @@ import { marcaVisto, toggleSeguito, isSeguito } from '../../lib/visti'
 
 // ── Icone marker ──────────────────────────────────────────────────────────────
 
-function makePriceIcon(pricePerMq, isUnderThreshold) {
-  const bg = isUnderThreshold ? '#22C55E' : '#F59E0B'
+function makePriceIcon(pricePerMq, isNuovo) {
+  const bg = isNuovo ? '#22C55E' : '#F59E0B'
   const label = pricePerMq ? `${(pricePerMq / 1000).toFixed(1)}k` : '?'
   return L.divIcon({
     className: '',
@@ -86,7 +86,7 @@ function PopupContent({ property, userId, onSeguito }) {
           </div>
           {property.url && (
             
-          <a    href={property.url}
+            <a  href={property.url}
               target="_blank"
               rel="noreferrer"
               style={{ color: '#60A5FA', fontSize: '11px', marginLeft: '8px', whiteSpace: 'nowrap' }}
@@ -253,6 +253,7 @@ export default function MapView({
   pendingCircle = null,
   drawMode = false,
   onCircleDrawn,
+  visti = new Set(),
   height = '100%',
 }) {
   return (
@@ -288,17 +289,16 @@ export default function MapView({
         const zonaMatch = zone.find(z =>
           haversineMeters(p.lat, p.lng, z.center_lat, z.center_lng) <= z.radius_m
         )
-        const isUnder = zonaMatch && p.pricePerMq
-          ? p.pricePerMq <= zonaMatch.max_euro_mq * 1.15
-          : false
 
         if (zone.length > 0 && !zonaMatch) return null
+
+        const isNuovo = !visti.has(String(p.id))
 
         return (
           <Marker
             key={p.id}
             position={[p.lat, p.lng]}
-            icon={makePriceIcon(p.pricePerMq, isUnder)}
+            icon={makePriceIcon(p.pricePerMq, isNuovo)}
           >
             <Popup closeButton={false}>
               <PopupContent property={p} userId={userId} onSeguito={onRefresh} />

@@ -299,6 +299,8 @@ export default function Dashboard() {
           drawMode={drawMode}
           onCircleDrawn={handleCircleDrawn}
           onRefresh={refreshVisti}
+          visti={visti}
+          userId={user?.id}
           height="100%"
         />
         <div style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 1000, background: 'rgba(17,24,39,0.92)', borderRadius: '10px', padding: '10px 14px', backdropFilter: 'blur(4px)' }}>
