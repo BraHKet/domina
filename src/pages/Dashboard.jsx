@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [editEuroMq, setEditEuroMq]       = useState('')
   const [soloNuovi, setSoloNuovi]         = useState(false)
   const [soloSeguiti, setSoloSeguiti]     = useState(false)
+  const [vistiSnapshot, setVistiSnapshot] = useState(null)
 
   function handleCircleDrawn(circle) {
     setDrawMode(false)
@@ -68,12 +69,14 @@ export default function Dashboard() {
     })
   }
 
+  const vistiPerFiltro = (soloNuovi && vistiSnapshot) ? vistiSnapshot : visti
+
   const visibili = properties.filter(p => {
     if (!p.pricePerMq) return false
-    if (!hasZone) return false                     // ← aggiunta questa riga
+    if (!hasZone) return false
     if (!dentroZone(p)) return false
-    if (soloNuovi   && visti.has(String(p.id)))    return false
-    if (soloSeguiti && !seguiti.has(String(p.id))) return false
+    if (soloNuovi   && vistiPerFiltro.has(String(p.id))) return false
+    if (soloSeguiti && !seguiti.has(String(p.id)))       return false
     return true
   })
 
@@ -143,8 +146,15 @@ export default function Dashboard() {
         <div style={{ padding: '10px 16px', borderBottom: '1px solid #1a2233', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" checked={soloNuovi} onChange={e => setSoloNuovi(e.target.checked)}
-                style={{ accentColor: '#22C55E', width: '13px', height: '13px' }} />
+              <input
+                type="checkbox"
+                checked={soloNuovi}
+                onChange={e => {
+                  setSoloNuovi(e.target.checked)
+                  setVistiSnapshot(e.target.checked ? new Set(visti) : null)
+                }}
+                style={{ accentColor: '#22C55E', width: '13px', height: '13px' }}
+              />
               <span style={{ color: '#D1D5DB', fontSize: '12px', fontWeight: '600' }}>Solo nuovi</span>
             </div>
             {nuoviCount > 0 && (
@@ -305,8 +315,8 @@ export default function Dashboard() {
         />
         <div style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 1000, background: 'rgba(17,24,39,0.92)', borderRadius: '10px', padding: '10px 14px', backdropFilter: 'blur(4px)' }}>
           {[
-            { color: '#22C55E', label: 'Sotto soglia (o entro -15%)' },
-            { color: '#F59E0B', label: 'Annunci generici' },
+            { color: '#22C55E', label: 'Nuovo annuncio' },
+            { color: '#F59E0B', label: 'Già visto' },
           ].map(({ color, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <div style={{ width: 10, height: 10, borderRadius: '3px', background: color, flexShrink: 0 }} />
@@ -318,4 +328,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
