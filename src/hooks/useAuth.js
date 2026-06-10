@@ -23,5 +23,5 @@ export function useAuth() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  return { user, loading }
+  return { user, loading } 
 }
