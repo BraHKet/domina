@@ -7,7 +7,10 @@ import Acquirente from './pages/Acquirente'
 
 export default function App() {
   useEffect(() => {
-    supabase.auth.getSession()
+    // Gestisce il token OAuth nell'hash URL dopo il redirect
+    if (window.location.hash.includes('access_token')) {
+      supabase.auth.getSession()
+    }
   }, [])
 
   return (
