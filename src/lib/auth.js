@@ -4,7 +4,7 @@ export async function loginGoogle() {
   await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'http://localhost:5173',
+      redirectTo: window.location.origin,
     },
   })
 }
