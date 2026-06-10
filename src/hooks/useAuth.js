@@ -8,11 +8,13 @@ export function useAuth() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      console.log('SESSION:', data.session)
       setUser(data.session?.user ?? null)
       setLoading(false)
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AUTH EVENT:', event, session)
       const u = session?.user ?? null
       setUser(u)
       if (event === 'SIGNED_IN' && u) {
