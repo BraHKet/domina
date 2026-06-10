@@ -1,9 +1,15 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { supabase } from './lib/supabase'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
 import Acquirente from './pages/Acquirente'
 
 export default function App() {
+  useEffect(() => {
+    supabase.auth.getSession()
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>
