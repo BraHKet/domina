@@ -5,6 +5,7 @@ import { useZone } from '../lib/useZone'
 import { useAuth } from '../hooks/useAuth'
 import { useVisti } from '../hooks/useVisti'
 import { loginGoogle, logout } from '../lib/auth'
+import * as XLSX from 'xlsx'
 
 export default function Dashboard() {
   const { user }                                                    = useAuth()
@@ -27,6 +28,34 @@ export default function Dashboard() {
     setInputLabel('')
     setInputInclAste(true)
     setInputStato('non-ristrutturato')
+  }
+
+  function esportaSeguiti() {
+    const dati = properties.filter(p => seguiti.has(String(p.id)))
+    if (dati.length === 0) return
+
+    const righe = dati.map(p => ({
+      'ID':               p.id,
+      'Indirizzo':        p.address,
+      'Indirizzo completo': p.fullAddress,
+      'Prezzo (€)':       p.price,
+      '€/mq':             p.pricePerMq ?? '',
+      'Superficie (m²)':  p.size,
+      'Locali':           p.rooms,
+      'Bagni':            p.bathrooms ?? '',
+      'Piano':            p.floor,
+      'Ascensore':        p.hasElevator ? 'Sì' : 'No',
+      'Stato immobile':   p.stato ?? '',
+      'Tipo':             p.type ?? '',
+      'Giorni mercato':   p.giorniMercato ?? '',
+      'URL':              p.url ?? '',
+      'Immagine':         p.imageUrl ?? '',
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(righe)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Seguiti')
+    XLSX.writeFile(wb, 'seguiti_domina.xlsx')
   }
 
   async function handleSalvaZona() {
@@ -186,11 +215,40 @@ console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ 
                 style={{ accentColor: '#FBBF24', width: '13px', height: '13px' }} />
               <span style={{ color: '#D1D5DB', fontSize: '12px', fontWeight: '600' }}>Solo seguiti</span>
             </div>
-            {seguitiCount > 0 && (
-              <span style={{ background: 'rgba(251,191,36,0.15)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.3)', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '999px' }}>
-                {seguitiCount} seguiti
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {seguitiCount > 0 && (
+                <span style={{ background: 'rgba(251,191,36,0.15)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.3)', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '999px' }}>
+                  {seguitiCount} seguiti
+                </span>
+              )}
+              {seguitiCount > 0 && (
+                <button
+                  onClick={esportaSeguiti}
+                  title="Esporta in Excel"
+                  style={{
+                    background: 'rgba(34,197,94,0.08)',
+                    border: '1px solid rgba(34,197,94,0.25)',
+                    borderRadius: '6px',
+                    color: '#22C55E',
+                    cursor: 'pointer',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    padding: '3px 8px',
+                    lineHeight: 1.4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Excel
+                </button>
+              )}
+            </div>
           </label>
         </div>
 
