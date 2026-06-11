@@ -7,7 +7,8 @@ import { useVisti } from '../hooks/useVisti'
 import { loginGoogle, logout } from '../lib/auth'
 import * as XLSX from 'xlsx'
 
-export default function Dashboard() {                                           
+export default function Dashboard() {  
+  const { user, loading: authLoading } = useAuth()                                         
   const { properties, loading }                                     = useProperties()
   const { zone, addZona, removeZona, updateZona, loading: zoneLoading } = useZone(user?.id)
   const { visti, seguiti, refresh: refreshVisti }                   = useVisti(user?.id)
@@ -20,7 +21,6 @@ export default function Dashboard() {
   const [soloNuovi, setSoloNuovi]         = useState(false)
   const [soloSeguiti, setSoloSeguiti]     = useState(false)
   const [vistiSnapshot, setVistiSnapshot] = useState(null)
-  const { user, loading: authLoading } = useAuth()
 
   function handleCircleDrawn(circle) {
     setDrawMode(false)
