@@ -10,16 +10,22 @@ export function useZone(userId) {
   }, [userId])
 
   async function fetchZone() {
-    console.log('fetchZone userId:', userId)
+    if (userId === undefined) {
+      console.log('fetchZone: userId undefined, skip')
+      setLoading(false)
+      return
+    }
+    console.log('fetchZone: partito con userId:', userId)
     setLoading(true)
     let query = supabase.from('zone_interesse').select('*').order('created_at')
     if (userId) query = query.eq('user_id', userId)
     else query = query.is('user_id', null)
-    const { data } = await query
+    const { data, error } = await query
+    console.log('fetchZone result:', data, error)
     setZone(data ?? [])
     setLoading(false)
   }
-
+  
   async function addZona(zona) {
     const payload = userId ? { ...zona, user_id: userId } : zona
     const { data, error } = await supabase
@@ -36,8 +42,6 @@ export function useZone(userId) {
   async function updateZona(id, updates) {
     const { data, error } = await supabase
       .from('zone_interesse').update(updates).eq('id', id).select().single()
-
-      console.log('zone data:', data, 'error:', error);
     if (!error && data) setZone(prev => prev.map(z => z.id === id ? data : z))
     return { data, error }
   }
