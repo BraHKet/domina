@@ -7,8 +7,7 @@ import { useVisti } from '../hooks/useVisti'
 import { loginGoogle, logout } from '../lib/auth'
 import * as XLSX from 'xlsx'
 
-export default function Dashboard() {
-  const { user }                                                    = useAuth()
+export default function Dashboard() {                                           
   const { properties, loading }                                     = useProperties()
   const { zone, addZona, removeZona, updateZona, loading: zoneLoading } = useZone(user?.id)
   const { visti, seguiti, refresh: refreshVisti }                   = useVisti(user?.id)
@@ -21,6 +20,7 @@ export default function Dashboard() {
   const [soloNuovi, setSoloNuovi]         = useState(false)
   const [soloSeguiti, setSoloSeguiti]     = useState(false)
   const [vistiSnapshot, setVistiSnapshot] = useState(null)
+  const { user, loading: authLoading } = useAuth()
 
   function handleCircleDrawn(circle) {
     setDrawMode(false)
@@ -127,9 +127,9 @@ export default function Dashboard() {
   const nuoviCount   = hasZone ? properties.filter(p => p.pricePerMq && dentroZone(p) && !visti.has(String(p.id))).length : 0
   const seguitiCount = properties.filter(p => seguiti.has(String(p.id))).length
 console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ id: p.id, type: p.type, stato_immobile: p.stato_immobile, pricePerMq: p.pricePerMq })))
-  if (loading || zoneLoading) return (
-    <div style={{ padding: '32px', color: '#9CA3AF' }}>Caricamento...</div>
-  )
+  if (authLoading || loading || zoneLoading) return (
+  <div style={{ padding: '32px', color: '#9CA3AF' }}>Caricamento...</div>
+)
 
   const statoLabel = (s) => s === 'non-ristrutturato' ? 'Da ristrutturare' : s === 'ristrutturato' ? 'Abitabile' : 'Entrambi'
 
