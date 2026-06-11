@@ -36,6 +36,8 @@ export function useZone(userId) {
   async function updateZona(id, updates) {
     const { data, error } = await supabase
       .from('zone_interesse').update(updates).eq('id', id).select().single()
+
+      console.log('zone data:', data, 'error:', error);
     if (!error && data) setZone(prev => prev.map(z => z.id === id ? data : z))
     return { data, error }
   }
