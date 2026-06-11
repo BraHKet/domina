@@ -17,6 +17,8 @@ export function useZone(userId) {
       query = query.eq('user_id', userId)
     }
     else query = query.is('user_id', null)
+
+    console.log('PRIMA:', userId)
     const { data, error } = await query
     console.log('fetchZone result:', data, error)
     setZone(data ?? [])
