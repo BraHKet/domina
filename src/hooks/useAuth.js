@@ -7,22 +7,24 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-  supabase.auth.getSession().then(({ data }) => {
-    console.log('SESSION:', data.session)
-    setUser(data.session?.user ?? null)
-    setLoading(false)
-  })
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('SESSION:', data.session)
+      setUser(data.session?.user ?? null)
+      setLoading(false)
+    })
 
-  const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('AUTH EVENT:', event, session)
-    const u = session?.user ?? null
-    setUser(u)
-    setLoading(false)  // ← aggiungi questo
-    if (event === 'SIGNED_IN' && u) {
-      await syncAlLogin(u.id)
-    }
-  })
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AUTH EVENT:', event, session)
+      const u = session?.user ?? null
+      setUser(u)
+      setLoading(false)
+      if (event === 'SIGNED_IN' && u) {
+        await syncAlLogin(u.id)
+      }
+    })
 
-  return () => listener.subscription.unsubscribe()
-}, [])
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  return { user, loading }
 }
