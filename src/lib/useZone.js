@@ -11,6 +11,7 @@ export function useZone(userId) {
 
   async function fetchZone() {
     setLoading(true)
+    console.log('Fetching zones for userId:', userId)
     let query = supabase.from('zone_interesse').select('*').order('created_at')
     if (userId) query = query.eq('user_id', userId)
     else query = query.is('user_id', null)
