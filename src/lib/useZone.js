@@ -18,12 +18,7 @@ export function useZone(userId) {
     }
     else query = query.is('user_id', null)
 
-    const { data, error } = await supabase
-    .from('zone_interesse')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at')
-    
+    const { data, error } = await query
     console.log('fetchZone result:', data, error)
     setZone(data ?? [])
     setLoading(false)
