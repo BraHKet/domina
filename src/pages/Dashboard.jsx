@@ -341,7 +341,7 @@ console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ 
           ))}
         </div>
 
-        {/* ── Login Google in fondo ── */}
+        {/* ── Login Google in fondo ── 
         <div style={{ padding: '14px 16px', borderTop: '1px solid #1a2233' }}>
           {user ? (
             <div>
@@ -380,7 +380,7 @@ console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ 
               </button>
             </div>
           )}
-        </div>
+        </div>*/}
 
       </div>
 
