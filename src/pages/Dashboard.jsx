@@ -126,10 +126,8 @@ export default function Dashboard() {
 
   const nuoviCount   = hasZone ? properties.filter(p => p.pricePerMq && dentroZone(p) && !visti.has(String(p.id))).length : 0
   const seguitiCount = properties.filter(p => seguiti.has(String(p.id))).length
-console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ id: p.id, type: p.type, stato_immobile: p.stato_immobile, pricePerMq: p.pricePerMq })))
-  if (authLoading || loading) return (
-  <div style={{ padding: '32px', color: '#9CA3AF' }}>Caricamento...</div>
-)
+  console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ id: p.id, type: p.type, stato_immobile: p.stato_immobile, pricePerMq: p.pricePerMq })))
+  
 
   const statoLabel = (s) => s === 'non-ristrutturato' ? 'Da ristrutturare' : s === 'ristrutturato' ? 'Abitabile' : 'Entrambi'
 
