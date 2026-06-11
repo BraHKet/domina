@@ -18,7 +18,8 @@ export function useZone(userId) {
     }
     else query = query.is('user_id', null)
 
-    console.log('PRIMA:', userId)
+    const { data: { session } } = await supabase.auth.getSession()
+console.log('session al momento della query:', session?.access_token?.slice(0, 20))
     const { data, error } = await query
     console.log('fetchZone result:', data, error)
     setZone(data ?? [])
