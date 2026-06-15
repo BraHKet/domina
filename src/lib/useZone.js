@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 
 export function useZone(userId) {
-  const [zone, setZone]     = useState([])
+  const [zone, setZone] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,7 +27,6 @@ export function useZone(userId) {
     }
 
     fetchZone()
-
     return () => { cancelled = true }
   }, [userId])
 
@@ -51,5 +50,5 @@ export function useZone(userId) {
     return { data, error }
   }
 
-  return { zone, loading, fetchZone, addZona, removeZona, updateZona }
+  return { zone, loading, addZona, removeZona, updateZona }
 }
