@@ -300,7 +300,7 @@ export default function Dashboard() {
         {/* Pulsanti Creazione Zona */}
         <div style={{
           padding: '10px',
-          background: 'rgba(13, 17, 23, 0.75)',
+          background: 'rgb(0, 0, 0)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -405,7 +405,7 @@ export default function Dashboard() {
           flex: 1,
           overflowY: 'auto',
           padding: '18px',
-          background: 'rgba(13, 17, 23, 0.75)',
+          background: 'rgb(0, 0, 0)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -448,7 +448,7 @@ export default function Dashboard() {
                   lineHeight: 1.5,
                   background: 'rgba(255,255,255,0.01)',
                 }}>
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>✏️</div>
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>🖊</div>
                   <strong>Tieni premuto e trascina</strong> sulla mappa per disegnare il raggio della zona.
                 </div>
               ) : (
