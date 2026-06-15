@@ -10,7 +10,12 @@ export async function loginGoogle() {
 }
 
 export async function logout() {
-  await supabase.auth.signOut()
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) console.error('Logout error:', error)
+  } catch (e) {
+    console.error('Logout exception:', e)
+  }
 }
 
 export async function getUser() {
