@@ -292,7 +292,7 @@ export default function Dashboard() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#6B7280',
+                  color: '#000000',
                   cursor: 'pointer',
                   fontSize: '11px',
                   fontWeight: '700',
