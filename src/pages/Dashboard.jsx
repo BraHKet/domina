@@ -673,10 +673,10 @@ export default function Dashboard() {
                                   fontSize: '9px',
                                   fontWeight: '700',
                                   padding: '2px 6px',
+                                  border: 'none',
                                   borderRadius: '4px',
                                   background: `${themeColor}15`,
                                   color: themeColor,
-                                  border: `1.5px solid ${themeColor}20`,
                                 }}
                               >
                                 {statoLabel(st)}
