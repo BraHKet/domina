@@ -20,18 +20,17 @@ export default function Dashboard() {
   const [inputInclAste, setInputInclAste] = useState(true)
   const [selectedStates, setSelectedStates] = useState(new Set())
   const [visibleZoneIds, setVisibleZoneIds] = useState(new Set())
-  const [isInitialized, setIsInitialized] = useState(false)
   const [soloNuovi, setSoloNuovi] = useState(false)
   const [soloSeguiti, setSoloSeguiti] = useState(false)
   const [vistiSnapshot, setVistiSnapshot] = useState(null)
 
-  // Inizializza le zone visibili al caricamento
   useEffect(() => {
-    if (zone.length > 0 && !isInitialized) {
+    if (zone.length > 0) {
       setVisibleZoneIds(new Set(zone.map(z => z.id)))
-      setIsInitialized(true)
+    } else {
+      setVisibleZoneIds(new Set())
     }
-  }, [zone, isInitialized])
+  }, [zone.map(z => z.id).join(',')])
 
   function handleCircleDrawn(circle) {
     setPendingCircle(circle)
