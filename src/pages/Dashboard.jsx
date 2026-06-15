@@ -502,7 +502,7 @@ export default function Dashboard() {
                               padding: '8px 12px',
                               borderRadius: '8px',
                               background: isSelected ? 'rgba(255,255,255,0.03)' : 'transparent',
-                              border: isSelected ? `1.5px solid ${drawMode === 'competitor' ? '#10B981' : '#FBBF24'}` : '1.5px solid transparent',
+                              border: '1.5px solid transparent',
                               transition: 'all 0.15s ease',
                             }}
                           >
@@ -803,13 +803,10 @@ export default function Dashboard() {
         bottom: '24px',
         right: '24px',
         zIndex: 1000,
-        background: 'rgba(13, 17, 23, 0.85)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'transparent',
+        border: 'none',
         borderRadius: '12px',
         padding: '10px 14px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
         pointerEvents: 'auto',
       }}>
         {[
@@ -818,7 +815,7 @@ export default function Dashboard() {
         ].map(({ color, label }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <div style={{ width: 10, height: 10, borderRadius: '3px', background: color, flexShrink: 0 }} />
-            <span style={{ color: '#D1D5DB', fontSize: '11px', fontWeight: '500' }}>{label}</span>
+            <span style={{ color: '#000000', fontSize: '11px' }}>{label}</span>
           </div>
         ))}
       </div>
