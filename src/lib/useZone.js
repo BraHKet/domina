@@ -6,23 +6,30 @@ export function useZone(userId) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchZone()
-  }, [userId])
+    let cancelled = false
 
-  async function fetchZone() {
-    setLoading(true)
-    console.log('Fetching zones for userId:', userId)
-    let query = supabase.from('zone_interesse').select('*').order('created_at')
-    if (userId) {
-      query = query.eq('user_id', userId)
+    async function fetchZone() {
+      setLoading(true)
+      console.log('Fetching zones for userId:', userId)
+      let query = supabase.from('zone_interesse').select('*').order('created_at')
+      if (userId) {
+        query = query.eq('user_id', userId)
+      } else {
+        query = query.is('user_id', null)
+      }
+
+      const { data, error } = await query
+      console.log('fetchZone result:', data, error)
+      if (!cancelled) {
+        setZone(data ?? [])
+        setLoading(false)
+      }
     }
-    else query = query.is('user_id', null)
 
-    const { data, error } = await query
-    console.log('fetchZone result:', data, error)
-    setZone(data ?? [])
-    setLoading(false)
-  }
+    fetchZone()
+
+    return () => { cancelled = true }
+  }, [userId])
 
   async function addZona(zona) {
     const payload = userId ? { ...zona, user_id: userId } : zona
