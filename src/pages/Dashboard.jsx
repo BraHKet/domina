@@ -8,6 +8,18 @@ import { rimuoviSeguiti } from '../lib/visti'
 import { loginGoogle, logout } from '../lib/auth'
 import * as XLSX from 'xlsx'
 
+function pointInPolygon(lat, lng, points) {
+  let inside = false
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].lng, yi = points[i].lat
+    const xj = points[j].lng, yj = points[j].lat
+    const intersect = ((yi > lat) !== (yj > lat)) &&
+      (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth()
   const { properties, loading } = useProperties()
@@ -46,6 +58,10 @@ export default function Dashboard() {
     const activeStates = statoFiltro ? statoFiltro.split(',') : []
     const annunci = properties.filter(p => {
       if (!p.pricePerMq) return false
+      if (z.polygon_points) {
+        return pointInPolygon(p.lat, p.lng, z.polygon_points) &&
+          (activeStates.length === 0 || activeStates.includes(p.type))
+      }
       const dist = Math.sqrt(
         Math.pow((p.lat - z.center_lat) * 111320, 2) +
         Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
@@ -59,24 +75,28 @@ export default function Dashboard() {
 
   function dentroZone(p) {
     return activeZones.some(z => {
-      const dist = Math.sqrt(
-        Math.pow((p.lat - z.center_lat) * 111320, 2) +
-        Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
-      )
-      if (dist > z.radius_m) return false
+      let dentro = false
+
+      if (z.polygon_points) {
+        dentro = pointInPolygon(p.lat, p.lng, z.polygon_points)
+      } else {
+        const dist = Math.sqrt(
+          Math.pow((p.lat - z.center_lat) * 111320, 2) +
+          Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
+        )
+        dentro = dist <= z.radius_m
+      }
+
+      if (!dentro) return false
       const astaOk = z.includi_aste ? true : !p.isAsta
       if (!astaOk) return false
       const statoFiltro = z.stato_filtro
       const activeStates = statoFiltro ? statoFiltro.split(',') : []
       if (activeStates.length > 0 && !activeStates.includes(p.type)) return false
 
-      // Analisi competitor: mostra tutti gli annunci (non applica il filtro sottomercato)
       const isCompetitor = statoFiltro && (statoFiltro.includes('Ottimo') || statoFiltro.includes('Nuovo'))
-      if (isCompetitor) {
-        return true
-      }
+      if (isCompetitor) return true
 
-      // Analisi opportunità: mostra solo gli annunci sottomercato (<= media)
       const media = mediaZona(z)
       if (media === null) return false
       return p.pricePerMq != null && p.pricePerMq <= media
@@ -128,15 +148,17 @@ export default function Dashboard() {
   async function handleSalvaZona() {
     if (selectedStates.size === 0) return
 
-    const { data, error } = await addZona({
+    const base = {
       label: inputLabel || null,
-      center_lat: pendingCircle.lat,
-      center_lng: pendingCircle.lng,
-      radius_m: pendingCircle.radius,
       stato_filtro: Array.from(selectedStates).join(','),
       includi_aste: inputInclAste,
-    })
+    }
 
+    const payload = pendingPolygon
+      ? { ...base, polygon_points: pendingPolygon.points, center_lat: null, center_lng: null, radius_m: null }
+      : { ...base, center_lat: pendingCircle.lat, center_lng: pendingCircle.lng, radius_m: pendingCircle.radius }
+
+    const { data, error } = await addZona(payload)
     if (error) return
 
     if (data) {
@@ -148,6 +170,7 @@ export default function Dashboard() {
     }
 
     setPendingCircle(null)
+    setPendingPolygon(null)
     setDrawMode(null)
     setInputLabel('')
     setInputInclAste(true)
@@ -194,6 +217,20 @@ export default function Dashboard() {
     })
   }
 
+  const [shapeType, setShapeType] = useState('circle')        
+  const [pendingPolygon, setPendingPolygon] = useState(null)  
+  const [polygonPoints, setPolygonPoints] = useState([])
+
+  function handlePointAdded(point) {
+    setPolygonPoints(prev => [...prev, point])
+  }
+
+  function handleChiudiPoligono() {
+    if (polygonPoints.length < 3) return
+    setPendingPolygon({ points: polygonPoints })
+    setPolygonPoints([])
+  }
+
   const statoLabel = (s) => {
     if (!s) return 'Qualsiasi'
     if (s.includes('Buono / Abitabile')) return 'Abitabile'
@@ -238,6 +275,10 @@ export default function Dashboard() {
           visti={visti}
           userId={user?.id}
           height="100%"
+          shapeType={shapeType}
+          pendingPolygon={pendingPolygon}
+          onPointAdded={handlePointAdded}
+          polygonPoints={polygonPoints}
         />
       </div>
 
@@ -349,10 +390,14 @@ export default function Dashboard() {
               if (drawMode === 'competitor') {
                 setDrawMode(null)
                 setPendingCircle(null)
+                setPendingPolygon(null)   // AGGIUNGI
+                setPolygonPoints([])      // AGGIUNGI
               } else {
                 setDrawMode('competitor')
                 setSelectedStates(new Set(['Ottimo / Ristrutturato', 'Nuovo / In costruzione']))
                 setPendingCircle(null)
+                setPendingPolygon(null)   // AGGIUNGI
+                setPolygonPoints([])      // AGGIUNGI
               }
             }}
             style={{
@@ -392,10 +437,14 @@ export default function Dashboard() {
               if (drawMode === 'opportunita') {
                 setDrawMode(null)
                 setPendingCircle(null)
+                setPendingPolygon(null)   // AGGIUNGI
+                setPolygonPoints([])      // AGGIUNGI
               } else {
                 setDrawMode('opportunita')
                 setSelectedStates(new Set(['Da ristrutturare', 'Buono / Abitabile']))
                 setPendingCircle(null)
+                setPendingPolygon(null)   // AGGIUNGI
+                setPolygonPoints([])      // AGGIUNGI
               }
             }}
             style={{
@@ -461,37 +510,123 @@ export default function Dashboard() {
                   Nuova Zona {drawMode === 'competitor' ? 'Competitor' : 'Opportunità'}
                 </h3>
                 <button 
-                  onClick={() => { setDrawMode(null); setPendingCircle(null); }}
+                  onClick={() => { setDrawMode(null); setPendingCircle(null); setPendingPolygon(null); setPolygonPoints([]) }}
                   style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '16px' }}
                 >
                   ✕
                 </button>
               </div>
 
-              {!pendingCircle ? (
-                <div style={{
-                  padding: '24px 14px',
-                  border: '1px dashed rgba(255,255,255,0.12)',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  color: '#9CA3AF',
-                  fontSize: '12px',
-                  lineHeight: 1.5,
-                  background: 'rgba(255,255,255,0.01)',
-                }}>
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>🖊</div>
-                  <strong>Tieni premuto e trascina</strong> sulla mappa per disegnare il raggio della zona.
+              {!pendingCircle && !pendingPolygon ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* Selector forma */}
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    {[
+                      { type: 'circle', icon: '⬤', label: 'Cerchio' },
+                      { type: 'polygon', icon: '⬡', label: 'Poligono' },
+                    ].map(({ type, icon, label }) => (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          setShapeType(type)
+                          if (type === 'circle') setPolygonPoints([])
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          borderRadius: '10px',
+                          border: shapeType === type
+                            ? `2px solid ${drawMode === 'competitor' ? '#10B981' : '#FBBF24'}`
+                            : '1.5px solid rgba(255,255,255,0.08)',
+                          background: shapeType === type ? 'rgba(255,255,255,0.04)' : 'transparent',
+                          color: shapeType === type
+                            ? (drawMode === 'competitor' ? '#10B981' : '#FBBF24')
+                            : '#6B7280',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <span style={{ fontSize: '18px' }}>{icon}</span>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {shapeType === 'polygon' ? (
+                    polygonPoints.length < 3 ? (
+                      <div style={{
+                        padding: '20px 14px',
+                        border: '1px dashed rgba(255,255,255,0.12)',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        color: '#9CA3AF',
+                        fontSize: '12px',
+                        lineHeight: 1.5,
+                        background: 'rgba(255,255,255,0.01)',
+                      }}>
+                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>🖊</div>
+                        <strong>Clicca</strong> sulla mappa per aggiungere punti ({polygonPoints.length}/3 minimi).
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleChiudiPoligono}
+                        style={{
+                          width: '100%',
+                          padding: '14px',
+                          borderRadius: '10px',
+                          border: `2px solid ${drawMode === 'competitor' ? '#10B981' : '#FBBF24'}`,
+                          background: drawMode === 'competitor' ? 'rgba(16,185,129,0.1)' : 'rgba(251,191,36,0.1)',
+                          color: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+                          fontWeight: '800',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        OK — Chiudi poligono ({polygonPoints.length} punti)
+                      </button>
+                    )
+                  ) : (
+                    <div style={{
+                      padding: '20px 14px',
+                      border: '1px dashed rgba(255,255,255,0.12)',
+                      borderRadius: '12px',
+                      textAlign: 'center',
+                      color: '#9CA3AF',
+                      fontSize: '12px',
+                      lineHeight: 1.5,
+                      background: 'rgba(255,255,255,0.01)',
+                    }}>
+                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>🖊</div>
+                      <strong>Tieni premuto e trascina</strong> sulla mappa per disegnare il raggio della zona.
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div>
-                    <span style={{ color: '#4B5563', fontSize: '10px', textTransform: 'uppercase', fontWeight: '700' }}>
-                      Raggio Zona
-                    </span>
-                    <p style={{ color: 'white', fontSize: '13px', fontWeight: '600', margin: '2px 0 0 0' }}>
-                      {Math.round(pendingCircle.radius)} metri
-                    </p>
-                  </div>
+                  {pendingCircle && (
+                    <div>
+                      <span style={{ color: '#4B5563', fontSize: '10px', textTransform: 'uppercase', fontWeight: '700' }}>
+                        Raggio Zona
+                      </span>
+                      <p style={{ color: 'white', fontSize: '13px', fontWeight: '600', margin: '2px 0 0 0' }}>
+                        {Math.round(pendingCircle.radius)} metri
+                      </p>
+                    </div>
+                  )}
+                  {pendingPolygon && (
+                    <div>
+                      <span style={{ color: '#4B5563', fontSize: '10px', textTransform: 'uppercase', fontWeight: '700' }}>
+                        Punti Poligono
+                      </span>
+                      <p style={{ color: 'white', fontSize: '13px', fontWeight: '600', margin: '2px 0 0 0' }}>
+                        {pendingPolygon.points.length} punti
+                      </p>
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span style={{ color: '#4B5563', fontSize: '10px', textTransform: 'uppercase', fontWeight: '700' }}>

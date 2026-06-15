@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, CircleMarker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { haversineMeters } from '../../lib/variables/haversineMeters'
@@ -242,6 +242,36 @@ function CircleDrawTool({ onCircleDrawn, drawMode }) {
   return null
 }
 
+// ── PolygonDrawTool ───────────────────────────────────────────────────────────────────
+
+function PolygonDrawTool({ onPointAdded, drawMode }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!onPointAdded) return
+
+    const container = map.getContainer()
+    container.style.cursor = 'crosshair'
+    map.dragging.disable()
+    map.doubleClickZoom.disable()
+
+    function onClick(e) {
+      onPointAdded({ lat: e.latlng.lat, lng: e.latlng.lng })
+    }
+
+    map.on('click', onClick)
+
+    return () => {
+      container.style.cursor = ''
+      map.dragging.enable()
+      map.doubleClickZoom.enable()
+      map.off('click', onClick)
+    }
+  }, [map, onPointAdded, drawMode])
+
+  return null
+}
+
 // ── MapView ───────────────────────────────────────────────────────────────────
 
 export default function MapView({
@@ -252,8 +282,12 @@ export default function MapView({
   markers = [],
   zone = [],
   pendingCircle = null,
+  pendingPolygon = null,
   drawMode = null,
+  shapeType = 'circle',
   onCircleDrawn,
+  onPointAdded,
+  polygonPoints = [],
   visti = new Set(),
   height = '100%',
 }) {
@@ -269,23 +303,62 @@ export default function MapView({
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
 
-      {zone.map(z => {
-        const isCompetitor = z.stato_filtro && (z.stato_filtro.includes('Ottimo') || z.stato_filtro.includes('Nuovo'))
-        const color = isCompetitor ? '#10B981' : '#FBBF24'
-        return (
-          <Circle
-            key={z.id}
-            center={[z.center_lat, z.center_lng]}
-            radius={z.radius_m}
-            pathOptions={{ color: color, fillColor: color, fillOpacity: 0.08, weight: 2 }}
-          />
-        )
-      })}
-
       {pendingCircle && (
         <Circle
           center={[pendingCircle.lat, pendingCircle.lng]}
           radius={pendingCircle.radius}
+          pathOptions={{
+            color: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillColor: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillOpacity: 0.12,
+            weight: 2,
+            dashArray: '6,4'
+          }}
+        />
+      )}
+
+      {pendingPolygon && (
+        <Polygon
+          positions={pendingPolygon.points.map(p => [p.lat, p.lng])}
+          pathOptions={{
+            color: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillColor: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillOpacity: 0.12,
+            weight: 2,
+            dashArray: '6,4'
+          }}
+        />
+      )}
+
+      {polygonPoints.length >= 2 && (
+        <Polygon
+          positions={polygonPoints.map(p => [p.lat, p.lng])}
+          pathOptions={{
+            color: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillColor: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillOpacity: 0.12,
+            weight: 2,
+            dashArray: '6,4'
+          }}
+        />
+      )}
+
+      {polygonPoints.length >= 1 && polygonPoints.map((p, i) => (
+        <CircleMarker
+          key={i}
+          center={[p.lat, p.lng]}
+          radius={5}
+          pathOptions={{
+            color: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillColor: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillOpacity: 1,
+            weight: 1,
+          }}
+        />
+      ))}
+      {polygonPoints.length >= 2 && (
+        <Polygon
+          positions={polygonPoints.map(p => [p.lat, p.lng])}
           pathOptions={{
             color: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
             fillColor: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
@@ -312,7 +385,36 @@ export default function MapView({
         )
       })}
 
-      {drawMode && <CircleDrawTool onCircleDrawn={onCircleDrawn} drawMode={drawMode} />}
+      {zone.map(z => {
+        const isCompetitor = z.stato_filtro && (z.stato_filtro.includes('Ottimo') || z.stato_filtro.includes('Nuovo'))
+        const color = isCompetitor ? '#10B981' : '#FBBF24'
+        
+        if (z.polygon_points) {
+          return (
+            <Polygon
+              key={z.id}
+              positions={z.polygon_points.map(p => [p.lat, p.lng])}
+              pathOptions={{ color, fillColor: color, fillOpacity: 0.08, weight: 2 }}
+            />
+          )
+        }
+        return (
+          <Circle
+            key={z.id}
+            center={[z.center_lat, z.center_lng]}
+            radius={z.radius_m}
+            pathOptions={{ color, fillColor: color, fillOpacity: 0.08, weight: 2 }}
+          />
+        )
+      })}
+
+      {drawMode && shapeType === 'circle' && (
+        <CircleDrawTool onCircleDrawn={onCircleDrawn} drawMode={drawMode} />
+      )}
+      {drawMode && shapeType === 'polygon' && (
+        <PolygonDrawTool onPointAdded={onPointAdded} drawMode={drawMode} />
+      )}
+
     </MapContainer>
   )
 }
