@@ -246,14 +246,14 @@ export default function Dashboard() {
       <div style={{
         position: 'absolute',
         top: '24px',
-        left: '24px',
+        left: '54px',
         zIndex: 1000,
         width: '340px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '15px',
         maxHeight: 'calc(100vh - 48px)',
-        pointerEvents: 'none'
+        pointerEvents: 'none',
       }}>
 
         {/* Brand / Logo */}
@@ -275,7 +275,7 @@ export default function Dashboard() {
               <span style={{ background: 'linear-gradient(135deg, #60A5FA, #A78BFA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>D</span>
               <span style={{ color: 'white' }}>omina</span>
             </span>
-            <span style={{ color: '#4B5563', fontSize: '11px', marginLeft: '8px', fontWeight: '500' }}>v1.1</span>
+            <span style={{ color: '#ffffff', fontSize: '11px', marginLeft: '8px', fontWeight: '500' }}>v1.1</span>
           </div>
           {user && (
             <button 
