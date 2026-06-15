@@ -158,7 +158,7 @@ function PopupContent({ property, userId, onSeguito }) {
 
 // ── Tool disegno cerchio ──────────────────────────────────────────────────────
 
-function CircleDrawTool({ onCircleDrawn }) {
+function CircleDrawTool({ onCircleDrawn, drawMode }) {
   const map = useMap()
   const drawingRef = useRef(false)
   const startLatLngRef = useRef(null)
@@ -192,10 +192,11 @@ function CircleDrawTool({ onCircleDrawn }) {
         cur.lat, cur.lng
       )
       if (previewRef.current) previewRef.current.remove()
+      const color = drawMode === 'competitor' ? '#10B981' : '#FBBF24'
       previewRef.current = L.circle(startLatLngRef.current, {
         radius: r,
-        color: '#60A5FA',
-        fillColor: '#60A5FA',
+        color: color,
+        fillColor: color,
         fillOpacity: 0.12,
         weight: 2,
         dashArray: '6,4',
@@ -236,7 +237,7 @@ function CircleDrawTool({ onCircleDrawn }) {
       window.removeEventListener('mouseup', onMouseUp)
       if (previewRef.current) { previewRef.current.remove(); previewRef.current = null }
     }
-  }, [map, onCircleDrawn])
+  }, [map, onCircleDrawn, drawMode])
 
   return null
 }
@@ -251,7 +252,7 @@ export default function MapView({
   markers = [],
   zone = [],
   pendingCircle = null,
-  drawMode = false,
+  drawMode = null,
   onCircleDrawn,
   visti = new Set(),
   height = '100%',
@@ -268,30 +269,34 @@ export default function MapView({
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
 
-      {zone.map(z => (
-        <Circle
-          key={z.id}
-          center={[z.center_lat, z.center_lng]}
-          radius={z.radius_m}
-          pathOptions={{ color: '#60A5FA', fillColor: '#60A5FA', fillOpacity: 0.08, weight: 2 }}
-        />
-      ))}
+      {zone.map(z => {
+        const isCompetitor = z.stato_filtro && (z.stato_filtro.includes('Ottimo') || z.stato_filtro.includes('Nuovo'))
+        const color = isCompetitor ? '#10B981' : '#FBBF24'
+        return (
+          <Circle
+            key={z.id}
+            center={[z.center_lat, z.center_lng]}
+            radius={z.radius_m}
+            pathOptions={{ color: color, fillColor: color, fillOpacity: 0.08, weight: 2 }}
+          />
+        )
+      })}
 
       {pendingCircle && (
         <Circle
           center={[pendingCircle.lat, pendingCircle.lng]}
           radius={pendingCircle.radius}
-          pathOptions={{ color: '#60A5FA', fillColor: '#60A5FA', fillOpacity: 0.12, weight: 2, dashArray: '6,4' }}
+          pathOptions={{
+            color: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillColor: drawMode === 'competitor' ? '#10B981' : '#FBBF24',
+            fillOpacity: 0.12,
+            weight: 2,
+            dashArray: '6,4'
+          }}
         />
       )}
 
       {markers.map(p => {
-        const zonaMatch = zone.find(z =>
-          haversineMeters(p.lat, p.lng, z.center_lat, z.center_lng) <= z.radius_m
-        )
-
-        
-
         const isNuovo = !visti.has(String(p.id))
 
         return (

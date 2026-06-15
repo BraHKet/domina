@@ -88,3 +88,15 @@ export async function syncAlLogin(userId) {
 export function isSeguito(id) {
   return lsGet(LS_SEGUITI).has(String(id))
 }
+
+export async function rimuoviSeguiti(ids, userId) {
+  const s = lsGet(LS_SEGUITI)
+  ids.forEach(id => s.delete(String(id)))
+  lsSet(LS_SEGUITI, s)
+  if (userId && ids.length > 0) {
+    await supabase.from('annunci_seguiti')
+      .delete()
+      .eq('user_id', userId)
+      .in('annuncio_id', ids.map(String))
+  }
+}
