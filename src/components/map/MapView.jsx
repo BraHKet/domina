@@ -312,7 +312,7 @@ export default function MapView({
         )
       })}
 
-      {drawMode && <CircleDrawTool onCircleDrawn={onCircleDrawn} />}
+      {drawMode && <CircleDrawTool onCircleDrawn={onCircleDrawn} drawMode={drawMode} />}
     </MapContainer>
   )
 }
