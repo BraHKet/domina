@@ -272,7 +272,7 @@ export default function Dashboard() {
               <span style={{ background: '#e86406', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>D</span>
               <span style={{ color: 'black' }}>omina</span>
             </span>
-            <span style={{ color: '#ffffff', fontSize: '11px', marginLeft: '8px', fontWeight: '500' }}>v1.1</span>
+            <span style={{ color: '#000000', fontSize: '11px', marginLeft: '8px', fontWeight: '500' }}>v1.2</span>
           </div>
           {user && (
             <button 
@@ -615,12 +615,7 @@ export default function Dashboard() {
                           background: isVisible 
                             ? (isCompetitor ? 'rgba(16, 185, 129, 0.08)' : 'rgba(251, 191, 36, 0.08)')
                             : 'rgba(255, 255, 255, 0.01)',
-                          border: isVisible
-                            ? `1.5px solid ${isCompetitor ? 'rgba(16, 185, 129, 0.25)' : 'rgba(251, 191, 36, 0.25)'}`
-                            : '1.5px solid rgba(255, 255, 255, 0.04)',
-                          boxShadow: isVisible
-                            ? `0 4px 12px ${isCompetitor ? 'rgba(16, 185, 129, 0.05)' : 'rgba(251, 191, 36, 0.05)'}`
-                            : 'none',
+                          border: 'none',
                           transition: 'all 0.2s ease',
                           opacity: isVisible ? 1 : 0.4,
                         }}
