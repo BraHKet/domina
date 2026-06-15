@@ -33,11 +33,6 @@ export default function Dashboard() {
     }
   }, [zone, isInitialized])
 
-  useEffect(() => {
-    setIsInitialized(false)
-    setVisibleZoneIds(new Set())
-  }, [user?.id])
-
   function handleCircleDrawn(circle) {
     setPendingCircle(circle)
     setInputLabel('')
@@ -214,7 +209,7 @@ export default function Dashboard() {
   )
 
   return (
-    <div key={user?.id ?? 'guest'} style={{
+    <div style={{
       position: 'relative',
       width: '100vw',
       height: '100vh',
