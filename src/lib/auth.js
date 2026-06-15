@@ -11,7 +11,7 @@ export async function loginGoogle() {
 
 export async function logout() {
   try {
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
   } catch (e) {
     console.log('Logout failed')
     console.error('Logout exception:', e)
