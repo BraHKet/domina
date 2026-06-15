@@ -11,9 +11,9 @@ export async function loginGoogle() {
 
 export async function logout() {
   try {
-    const { error } = await supabase.auth.signOut()
-    if (error) console.error('Logout error:', error)
+    await supabase.auth.signOut()
   } catch (e) {
+    console.log('Logout failed')
     console.error('Logout exception:', e)
   }
 }
