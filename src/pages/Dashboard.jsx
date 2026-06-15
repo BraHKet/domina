@@ -259,12 +259,9 @@ export default function Dashboard() {
         {/* Brand / Logo */}
         <div style={{
           padding: '16px 20px',
-          background: 'rgba(13, 17, 23, 0.75)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          background: 'rgba(26, 78, 155, 0)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '16px',
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
           pointerEvents: 'auto',
           display: 'flex',
           justifyContent: 'space-between',
@@ -272,8 +269,8 @@ export default function Dashboard() {
         }}>
           <div>
             <span style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-              <span style={{ background: 'linear-gradient(135deg, #60A5FA, #A78BFA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>D</span>
-              <span style={{ color: 'white' }}>omina</span>
+              <span style={{ background: '#e86406', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>D</span>
+              <span style={{ color: 'black' }}>omina</span>
             </span>
             <span style={{ color: '#ffffff', fontSize: '11px', marginLeft: '8px', fontWeight: '500' }}>v1.1</span>
           </div>
@@ -542,7 +539,7 @@ export default function Dashboard() {
                       type="checkbox"
                       checked={inputInclAste}
                       onChange={e => setInputInclAste(e.target.checked)}
-                      style={{ accentColor: '#10B981', width: '14px', height: '14px' }}
+                      style={{ accentColor: '#ffffff', width: '14px', height: '14px' }}
                     />
                     <span style={{ color: '#D1D5DB', fontSize: '12px' }}>Includi aste giudiziarie</span>
                   </label>
