@@ -276,7 +276,11 @@ export default function Dashboard() {
           </div>
           {user ? (
             <button
-              onClick={logout}
+              onClick={async () => {
+    console.log('logout clicked')
+    await logout()
+    console.log('logout done')
+  }}
               style={{
                 background: 'rgba(239, 68, 68, 0.08)',
                 border: '1px solid rgba(239, 68, 68, 0.2)',
