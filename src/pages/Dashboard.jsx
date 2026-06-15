@@ -7,19 +7,19 @@ import { useVisti } from '../hooks/useVisti'
 import { loginGoogle, logout } from '../lib/auth'
 import * as XLSX from 'xlsx'
 
-export default function Dashboard() {  
-  const { user, loading: authLoading } = useAuth()                                         
-  const { properties, loading }                                     = useProperties()
+export default function Dashboard() {
+  const { user, loading: authLoading } = useAuth()
+  const { properties, loading } = useProperties()
   const { zone, addZona, removeZona, updateZona, loading: zoneLoading } = useZone(user?.id)
-  const { visti, seguiti, refresh: refreshVisti }                   = useVisti(user?.id)
+  const { visti, seguiti, refresh: refreshVisti } = useVisti(user?.id)
 
-  const [drawMode, setDrawMode]           = useState(false)
+  const [drawMode, setDrawMode] = useState(false)
   const [pendingCircle, setPendingCircle] = useState(null)
-  const [inputLabel, setInputLabel]       = useState('')
+  const [inputLabel, setInputLabel] = useState('')
   const [inputInclAste, setInputInclAste] = useState(true)
-  const [inputStato, setInputStato]       = useState('non-ristrutturato')  // ← nuovo
-  const [soloNuovi, setSoloNuovi]         = useState(false)
-  const [soloSeguiti, setSoloSeguiti]     = useState(false)
+  const [inputStato, setInputStato] = useState()
+  const [soloNuovi, setSoloNuovi] = useState(false)
+  const [soloSeguiti, setSoloSeguiti] = useState(false)
   const [vistiSnapshot, setVistiSnapshot] = useState(null)
 
   function handleCircleDrawn(circle) {
@@ -27,7 +27,7 @@ export default function Dashboard() {
     setPendingCircle(circle)
     setInputLabel('')
     setInputInclAste(true)
-    setInputStato('non-ristrutturato')
+    setInputStato()
   }
 
   function esportaSeguiti() {
@@ -35,21 +35,21 @@ export default function Dashboard() {
     if (dati.length === 0) return
 
     const righe = dati.map(p => ({
-      'ID':               p.id,
-      'Indirizzo':        p.address,
+      'ID': p.id,
+      'Indirizzo': p.address,
       'Indirizzo completo': p.fullAddress,
-      'Prezzo (€)':       p.price,
-      '€/mq':             p.pricePerMq ?? '',
-      'Superficie (m²)':  p.size,
-      'Locali':           p.rooms,
-      'Bagni':            p.bathrooms ?? '',
-      'Piano':            p.floor,
-      'Ascensore':        p.hasElevator ? 'Sì' : 'No',
-      'Stato immobile':   p.stato ?? '',
-      'Tipo':             p.type ?? '',
-      'Giorni mercato':   p.giorniMercato ?? '',
-      'URL':              p.url ?? '',
-      'Immagine':         p.imageUrl ?? '',
+      'Prezzo (€)': p.price,
+      '€/mq': p.pricePerMq ?? '',
+      'Superficie (m²)': p.size,
+      'Locali': p.rooms,
+      'Bagni': p.bathrooms ?? '',
+      'Piano': p.floor,
+      'Ascensore': p.hasElevator ? 'Sì' : 'No',
+      'Stato immobile': p.stato ?? '',
+      'Tipo': p.type ?? '',
+      'Giorni mercato': p.giorniMercato ?? '',
+      'URL': p.url ?? '',
+      'Immagine': p.imageUrl ?? '',
     }))
 
     const ws = XLSX.utils.json_to_sheet(righe)
@@ -59,26 +59,26 @@ export default function Dashboard() {
   }
 
   async function handleSalvaZona() {
-  const { data, error } = await addZona({
-    label:        inputLabel || null,
-    center_lat:   pendingCircle.lat,
-    center_lng:   pendingCircle.lng,
-    radius_m:     pendingCircle.radius,
-    stato_filtro: inputStato,
-    includi_aste: inputInclAste,
-  })
-  console.log('addZona result:', { data, error })
-  if (error) return  // ← non resettare se c'è errore
-  setPendingCircle(null)
-  setInputLabel('')
-  setInputInclAste(true)
-  setInputStato('non-ristrutturato')
-}
+    const { data, error } = await addZona({
+      label: inputLabel || null,
+      center_lat: pendingCircle.lat,
+      center_lng: pendingCircle.lng,
+      radius_m: pendingCircle.radius,
+      stato_filtro: inputStato,
+      includi_aste: inputInclAste,
+    })
+    console.log('addZona result:', { data, error })
+    if (error) return  // ← non resettare se c'è errore
+    setPendingCircle(null)
+    setInputLabel('')
+    setInputInclAste(true)
+    setInputStato()
+  }
 
   const hasZone = zone.length > 0
 
   function mediaZona(z) {
-    const statoFiltro = z.stato_filtro ?? 'non-ristrutturato'
+    const statoFiltro = z.stato_filtro
     const annunci = properties.filter(p => {
       if (!p.pricePerMq) return false
       const dist = Math.sqrt(
@@ -86,8 +86,7 @@ export default function Dashboard() {
         Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
       )
       if (dist > z.radius_m) return false
-      if (statoFiltro === 'entrambi') return p.type === 'non-ristrutturato' || p.type === 'ristrutturato'
-      return p.type === statoFiltro
+      return !statoFiltro || p.type === statoFiltro
     })
     if (annunci.length === 0) return null
     return annunci.reduce((sum, p) => sum + p.pricePerMq, 0) / annunci.length
@@ -102,11 +101,8 @@ export default function Dashboard() {
       if (dist > z.radius_m) return false
       const astaOk = z.includi_aste ? true : !p.isAsta
       if (!astaOk) return false
-      const statoFiltro = z.stato_filtro ?? 'non-ristrutturato'
-      const statoOk = statoFiltro === 'entrambi'
-        ? (p.type === 'non-ristrutturato' || p.type === 'ristrutturato')
-        : p.type === statoFiltro
-      if (!statoOk) return false
+      const statoFiltro = z.stato_filtro
+      if (statoFiltro && p.type !== statoFiltro) return false
       const media = mediaZona(z)
       if (media === null) return false
       return p.pricePerMq != null && p.pricePerMq <= media
@@ -124,14 +120,22 @@ export default function Dashboard() {
     return true
   })
 
-  const nuoviCount   = hasZone ? properties.filter(p => p.pricePerMq && dentroZone(p) && !visti.has(String(p.id))).length : 0
+  const nuoviCount = hasZone ? properties.filter(p => p.pricePerMq && dentroZone(p) && !visti.has(String(p.id))).length : 0
   const seguitiCount = properties.filter(p => seguiti.has(String(p.id))).length
-console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ id: p.id, type: p.type, stato_immobile: p.stato_immobile, pricePerMq: p.pricePerMq })))
+  console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ id: p.id, type: p.type, stato_immobile: p.stato_immobile, pricePerMq: p.pricePerMq })))
   if (authLoading) return (
-  <div style={{ padding: '32px', color: '#9CA3AF' }}>Caricamento...</div>
-)
+    <div style={{ padding: '32px', color: '#9CA3AF' }}>Caricamento...</div>
+  )
 
-  const statoLabel = (s) => s === 'non-ristrutturato' ? 'Da ristrutturare' : s === 'ristrutturato' ? 'Abitabile' : 'Entrambi'
+  const statoLabel = (s) => {
+    if (!s) return 'Qualsiasi'
+    if (s.includes('Buono / Abitabile')) return 'Abitabile'
+    if (s.includes('Ottimo / Ristrutturato')) return 'Ottimo'
+    if (s.includes('Da ristrutturare')) return 'Da Ristrutturare'
+    if (s.includes('Nuovo / In costruzione')) return 'In Costruzione'
+    return s
+  }
+
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
@@ -241,9 +245,9 @@ console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ 
                   }}
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                   Excel
                 </button>
@@ -266,9 +270,10 @@ console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ 
               <p style={{ color: '#6B7280', fontSize: '10px', margin: '0 0 6px 0' }}>Tipo immobili</p>
               <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
                 {[
-                  { val: 'non-ristrutturato', label: 'Da ristr.' },
-                  { val: 'ristrutturato',     label: 'Abitabile' },
-                  { val: 'entrambi',          label: 'Entrambi'  },
+                  { val: 'Buono / Abitabile', label: 'Abitabile' },
+                  { val: 'Ottimo / Ristrutturato', label: 'Ottimo' },
+                  { val: 'Da ristrutturare', label: 'Da Ristrutturare' },
+                  { val: 'Nuovo / In costruzione', label: 'In Costruzione' },
                 ].map(({ val, label }) => (
                   <button
                     key={val}
@@ -329,7 +334,7 @@ console.log('properties nella zona sample:', properties.slice(0, 5).map(p => ({ 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '6px', padding: '5px 10px' }}>
                   <span style={{ color: '#60A5FA', fontWeight: '700', fontSize: '12px' }}>
-                    {statoLabel(z.stato_filtro ?? 'non-ristrutturato')}
+                    {statoLabel(z.stato_filtro)}
                   </span>
                   <span style={{ color: '#374151', fontSize: '10px', marginLeft: '5px' }}>· sotto media</span>
                 </div>

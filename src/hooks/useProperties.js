@@ -9,9 +9,7 @@ function mapRow(row) {
     : null
 
   const s = row.stato_immobile?.toLowerCase() ?? ''
-  const type = s.includes('da ristrutturare') ? 'non-ristrutturato'
-             : (s.includes('ottim') || s.includes('ristrutturato') || s.includes('abitabile') || s.includes('buono')) ? 'ristrutturato'
-             : null
+  const type = row.stato_immobile ?? null
 
   return {
     id:           row.id,
