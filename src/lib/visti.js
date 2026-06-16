@@ -14,6 +14,27 @@ function lsSet(key, set) {
   localStorage.setItem(key, JSON.stringify([...set]))
 }
 
+// Supabase/PostgREST limita ogni query a 1000 righe di default: senza paginare,
+// utenti con più di 1000 annunci_visti/annunci_seguiti perdono silenziosamente
+// le righe oltre la millesima (spesso le più recenti).
+async function fetchAllAnnuncioIds(table, userId) {
+  const pageSize = 1000
+  let tutte = []
+  let offset = 0
+  while (true) {
+    const { data } = await supabase
+      .from(table)
+      .select('annuncio_id')
+      .eq('user_id', userId)
+      .range(offset, offset + pageSize - 1)
+    if (!data || data.length === 0) break
+    tutte = tutte.concat(data)
+    if (data.length < pageSize) break
+    offset += pageSize
+  }
+  return tutte
+}
+
 // ── Visti ─────────────────────────────────────────────────────────────────────
 
 export function getVistiLocali() { return lsGet(LS_VISTI) }
@@ -32,11 +53,8 @@ export async function marcaVisto(id, userId) {
 
 export async function getVistiRemoti(userId) {
   if (!userId) return new Set()
-  const { data } = await supabase
-    .from('annunci_visti')
-    .select('annuncio_id')
-    .eq('user_id', userId)
-  return new Set((data ?? []).map(r => r.annuncio_id))
+  const data = await fetchAllAnnuncioIds('annunci_visti', userId)
+  return new Set(data.map(r => r.annuncio_id))
 }
 
 // ── Seguiti ───────────────────────────────────────────────────────────────────
@@ -60,11 +78,8 @@ export async function toggleSeguito(id, userId) {
 
 export async function getSeguitiRemoti(userId) {
   if (!userId) return new Set()
-  const { data } = await supabase
-    .from('annunci_seguiti')
-    .select('annuncio_id')
-    .eq('user_id', userId)
-  return new Set((data ?? []).map(r => r.annuncio_id))
+  const data = await fetchAllAnnuncioIds('annunci_seguiti', userId)
+  return new Set(data.map(r => r.annuncio_id))
 }
 
 // ── Sync localStorage → Supabase al login ────────────────────────────────────
