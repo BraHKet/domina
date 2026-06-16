@@ -1207,7 +1207,7 @@ export default function Dashboard() {
                 minWidth: 0,
               }}
             >
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: m.colore, flexShrink: 0 }} />
+              <div style={{ width: '15px', height: '15px', borderRadius: '300%', background: m.colore, flexShrink: 0, marginRight: '15px' }} />
               <div style={{ minWidth: 0 }}>
                 <p style={{
                   margin: 0,
