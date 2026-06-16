@@ -684,7 +684,7 @@ export default function Dashboard() {
                           cursor: 'pointer',
                         }}
                       >
-                        OK — Chiudi poligono ({polygonPoints.length} punti)
+                        Chiudi poligono ({polygonPoints.length} punti)
                       </button>
                     )
                   ) : (
