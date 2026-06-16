@@ -1179,7 +1179,7 @@ export default function Dashboard() {
       {hasZone && metricheBarra.some(m => m.media != null) && (
         <div style={{
           position: 'absolute',
-          bottom: '100px',
+          bottom: '65px',
           left: '410px',
           right: '180px',
           zIndex: 1000,
@@ -1277,8 +1277,8 @@ export default function Dashboard() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: '#0B0F17',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: '#000000',
+              border: '1px solid rgba(2, 2, 2, 0.1)',
               borderRadius: '18px',
               width: '820px',
               maxWidth: '58vw',
