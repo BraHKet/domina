@@ -9,7 +9,7 @@ export function useOmi() {
   useEffect(() => {
     async function fetch() {
       const { data, error } = await supabase
-        .from('tabella-omi-barriera-di-milano')
+        .from('omi_riferimento')
         .select('*')
 
       if (error) {

@@ -40,7 +40,7 @@ export function useProperties() {
   useEffect(() => {
     async function fetch() {
       const { data, error: supabaseError } = await supabase
-        .from('barriera-di-milano-attuale')
+        .from('annunci_attuali')
         .select('id, indirizzo, tipologia, microzona, prezzo_valore, superficie, locali, piano, ascensore, latitudine, longitudine, stato_immobile, immagine_stanza, prezzo_mq, url, data_creazione, agenzia, cellulare')
         .order('id')
 

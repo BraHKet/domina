@@ -6,7 +6,7 @@ export async function getUltimoStorico(ids) {
   if (!ids || ids.length === 0) return {}
 
   const { data } = await supabase
-    .from('barriera-di-milano-storico')
+    .from('annunci_storico')
     .select('id, indirizzo, prezzo_valore, prezzo_mq, url, data_scraping')
     .in('id', ids.map(Number))
     .order('data_scraping', { ascending: false })
@@ -23,7 +23,7 @@ export async function getUltimoStorico(ids) {
 // usato per mostrare il grafico del prezzo nel tempo nella scheda di dettaglio.
 export async function getStoricoCompleto(id) {
   const { data } = await supabase
-    .from('barriera-di-milano-storico')
+    .from('annunci_storico')
     .select('data_scraping, prezzo_valore, indirizzo, prezzo_mq, url, immagine_stanza, superficie, locali, piano, ascensore, bagni, stato_immobile, tipologia')
     .eq('id', Number(id))
     .order('data_scraping', { ascending: true })
