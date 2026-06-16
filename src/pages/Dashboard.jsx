@@ -1270,15 +1270,15 @@ export default function Dashboard() {
             zIndex: 2000,
             display: 'flex',
             alignItems: 'flex-start',
-            justifyContent: 'flex-end',
-            padding: '80px 4% 0 0',
+            justifyContent: 'flex-start',
+            padding: '105px 0 0 707px',
           }}
         >
           <div
             onClick={e => e.stopPropagation()}
             style={{
               background: '#000000',
-              border: '1px solid rgba(2, 2, 2, 0.1)',
+              border: 'none',
               borderRadius: '18px',
               width: '820px',
               maxWidth: '58vw',
