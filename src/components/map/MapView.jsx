@@ -36,8 +36,7 @@ function PopupContent({ property, userId, onSeguito }) {
   const [seguito, setSeguito] = useState(isSeguito(property.id))
 
   useEffect(() => {
-    marcaVisto(property.id, userId)
-    onSeguito?.()
+    marcaVisto(property.id, userId).then(() => onSeguito?.())
   }, [])
 
   function handleSegui() {
