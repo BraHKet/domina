@@ -1210,7 +1210,7 @@ export default function Dashboard() {
               <div style={{ width: '15px', height: '15px', borderRadius: '300%', background: m.colore, flexShrink: 0, marginRight: '15px' }} />
               <div style={{ minWidth: 0 }}>
                 <p style={{
-                  margin: 0,
+                  margin: 0, 
                   color: '#6B7280',
                   fontSize: '9px',
                   fontWeight: '800',
