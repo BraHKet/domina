@@ -5,8 +5,10 @@ import { useZone } from '../lib/useZone'
 import { useAuth } from '../hooks/useAuth'
 import { useVisti } from '../hooks/useVisti'
 import { rimuoviSeguiti } from '../lib/visti'
+import { getUltimoStorico, getStoricoCompleto } from '../lib/storico'
 import { loginGoogle, logout } from '../lib/auth'
 import * as XLSX from 'xlsx'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 function pointInPolygon(lat, lng, points) {
   let inside = false
@@ -25,6 +27,10 @@ export default function Dashboard() {
   const { properties, loading } = useProperties()
   const { zone, addZona, removeZona, updateZona, loading: zoneLoading } = useZone(user?.id)
   const { visti, seguiti, refresh: refreshVisti } = useVisti(user?.id)
+  const [storicoRimossi, setStoricoRimossi] = useState({})
+  const [notificheOpen, setNotificheOpen] = useState(false)
+  const [dettaglioAperto, setDettaglioAperto] = useState(null) // id annuncio o null
+  const [dettaglioStorico, setDettaglioStorico] = useState([])
 
   const [drawMode, setDrawMode] = useState(null) // 'competitor' | 'opportunita' | null
   const [pendingCircle, setPendingCircle] = useState(null)
@@ -116,6 +122,38 @@ export default function Dashboard() {
 
   const nuoviCount = hasZone ? properties.filter(p => p.pricePerMq && dentroZone(p) && !visti.has(String(p.id))).length : 0
   const seguitiCount = hasZone ? properties.filter(p => seguiti.has(String(p.id)) && dentroZone(p)).length : 0
+
+  // Annunci seguiti che non sono più presenti tra gli annunci correnti (rimossi alla fonte)
+  const propertiesIds = new Set(properties.map(p => String(p.id)))
+  const seguitiRimossiIds = loading ? [] : [...seguiti].filter(id => !propertiesIds.has(id))
+
+  useEffect(() => {
+    if (seguitiRimossiIds.length === 0) {
+      setStoricoRimossi({})
+      return
+    }
+    getUltimoStorico(seguitiRimossiIds).then(setStoricoRimossi)
+  }, [seguitiRimossiIds.join(',')])
+
+  const seguitiRimossi = seguitiRimossiIds.map(id => ({ id, ...storicoRimossi[id] }))
+
+  async function handleDismissRimosso(id) {
+    await rimuoviSeguiti([id], user?.id)
+    refreshVisti()
+  }
+
+  useEffect(() => {
+    if (!dettaglioAperto) {
+      setDettaglioStorico([])
+      return
+    }
+    getStoricoCompleto(dettaglioAperto).then(setDettaglioStorico)
+  }, [dettaglioAperto])
+
+  function handleApriDettaglio(id) {
+    setDettaglioAperto(id)
+    setNotificheOpen(false)
+  }
 
   function esportaSeguiti() {
     const dati = properties.filter(p => seguiti.has(String(p.id)) && dentroZone(p))
@@ -876,7 +914,116 @@ export default function Dashboard() {
         gap: '10px',
         pointerEvents: 'auto',
       }}>
-        
+
+        {/* Campanella Notifiche */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setNotificheOpen(o => !o)}
+            title="Notifiche"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgb(0, 0, 0)',
+              border: 'none',
+              borderRadius: '12px',
+              width: '37px',
+              height: '33px',
+              cursor: 'pointer',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              fontSize: '15px',
+              position: 'relative',
+            }}
+          >
+            🔔
+            {seguitiRimossi.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: '#EF4444',
+                color: 'white',
+                fontSize: '9px',
+                fontWeight: '800',
+                borderRadius: '999px',
+                padding: '1px 5px',
+                minWidth: '14px',
+                lineHeight: '14px',
+                textAlign: 'center',
+              }}>
+                {seguitiRimossi.length}
+              </span>
+            )}
+          </button>
+
+          {notificheOpen && (
+            <>
+              <div
+                onClick={() => setNotificheOpen(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 1050 }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: '280px',
+                background: 'rgb(0, 0, 0)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '14px',
+                padding: '12px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                zIndex: 1100,
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: '800', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                  Notifiche
+                </div>
+                {seguitiRimossi.length === 0 ? (
+                  <p style={{ color: '#4B5563', fontSize: '12px', textAlign: 'center', padding: '16px 0', margin: 0 }}>
+                    Nessuna notifica
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '260px', overflowY: 'auto' }}>
+                    {seguitiRimossi.map(item => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleApriDettaglio(item.id)}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: 'rgba(255,255,255,0.04)',
+                          borderRadius: '8px',
+                          padding: '8px 10px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ margin: 0, color: 'white', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.indirizzo || `Annuncio #${item.id}`}
+                          </p>
+                          <p style={{ margin: 0, color: '#EF4444', fontSize: '10px' }}>
+                            Non più disponibile
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDismissRimosso(item.id) }}
+                          title="Rimuovi dai seguiti"
+                          style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '13px', flexShrink: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Toggle Solo Nuovi */}
         <label style={{
           display: 'flex',
@@ -990,6 +1137,163 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* ── Scheda Dettaglio Annuncio Rimosso ── */}
+      {dettaglioAperto && (
+        <div
+          onClick={() => setDettaglioAperto(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'flex-end',
+            padding: '80px 4% 0 0',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0B0F17',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '18px',
+              width: '820px',
+              maxWidth: '58vw',
+              maxHeight: '80vh',
+              display: 'flex',
+              alignItems: 'stretch',
+              overflow: 'hidden',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+            }}
+          >
+            {dettaglioStorico.length > 0 && dettaglioStorico[dettaglioStorico.length - 1].immagine_stanza && (
+              <div style={{ width: '270px', flexShrink: 0 }}>
+                <img
+                  src={dettaglioStorico[dettaglioStorico.length - 1].immagine_stanza}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'grayscale(0.3)' }}
+                />
+              </div>
+            )}
+
+            <div style={{ flex: 1, minWidth: 0, padding: '26px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: 'white', fontSize: '17px', fontWeight: '800' }}>
+                    {dettaglioStorico[dettaglioStorico.length - 1]?.indirizzo || `Annuncio #${dettaglioAperto}`}
+                  </h3>
+                  <p style={{ margin: '5px 0 0 0', color: '#EF4444', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Non più disponibile
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDettaglioAperto(null)}
+                  style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '18px', flexShrink: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {dettaglioStorico.length === 0 ? (
+                <p style={{ color: '#6B7280', fontSize: '12px', textAlign: 'center', padding: '24px 0' }}>
+                  Caricamento storico…
+                </p>
+              ) : (() => {
+                const ultimo = dettaglioStorico[dettaglioStorico.length - 1]
+                return (
+                  <>
+                    <div style={{ display: 'flex', gap: '28px', margin: '18px 0' }}>
+                      <div>
+                        <span style={{ color: '#4B5563', fontSize: '10px', textTransform: 'uppercase', fontWeight: '700' }}>
+                          Ultimo prezzo
+                        </span>
+                        <p style={{ margin: '3px 0 0 0', color: 'white', fontSize: '19px', fontWeight: '800' }}>
+                          {Number(ultimo.prezzo_valore).toLocaleString('it-IT')} €
+                        </p>
+                        {ultimo.prezzo_mq != null && (
+                          <p style={{ margin: '2px 0 0 0', color: '#9CA3AF', fontSize: '11px' }}>
+                            {Number(ultimo.prezzo_mq).toLocaleString('it-IT')} €/m²
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <span style={{ color: '#4B5563', fontSize: '10px', textTransform: 'uppercase', fontWeight: '700' }}>
+                          Ultimo avvistamento
+                        </span>
+                        <p style={{ margin: '3px 0 0 0', color: 'white', fontSize: '13px', fontWeight: '600' }}>
+                          {new Date(ultimo.data_scraping).toLocaleDateString('it-IT')}
+                        </p>
+                        {ultimo.stato_immobile && (
+                          <p style={{ margin: '2px 0 0 0', color: '#9CA3AF', fontSize: '11px' }}>
+                            {ultimo.stato_immobile}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px', padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+                      {[
+                        { label: 'Sup.',       value: ultimo.superficie ? `${ultimo.superficie} m²` : '—' },
+                        { label: 'Locali',     value: ultimo.locali ?? '—' },
+                        { label: 'Piano',      value: ultimo.piano ?? '—' },
+                        { label: 'Bagni',      value: ultimo.bagni ?? '—' },
+                        { label: 'Ascensore',  value: ultimo.ascensore ? 'Sì' : 'No' },
+                        { label: 'Tipo',       value: ultimo.tipologia ?? '—' },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <p style={{ color: '#4B5563', fontSize: '9px', margin: '0 0 2px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+                          <p style={{ color: 'white', fontSize: '12px', fontWeight: '600', margin: 0 }}>{value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {ultimo.url && (
+                      <a
+                        href={ultimo.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: 'block', color: '#60A5FA', fontSize: '12px', marginBottom: '16px' }}
+                      >
+                        Apri annuncio originale →
+                      </a>
+                    )}
+
+                    <span style={{ color: '#4B5563', fontSize: '10px', textTransform: 'uppercase', fontWeight: '700' }}>
+                      Andamento prezzo
+                    </span>
+                    <div style={{ width: '100%', height: '130px', marginTop: '8px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={dettaglioStorico.map(r => ({ data: r.data_scraping, prezzo: r.prezzo_valore }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                          <XAxis
+                            dataKey="data"
+                            tick={{ fill: '#6B7280', fontSize: 9 }}
+                            tickFormatter={d => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+                          />
+                          <YAxis
+                            tick={{ fill: '#6B7280', fontSize: 9 }}
+                            domain={['auto', 'auto']}
+                            tickFormatter={v => `${(v / 1000).toFixed(0)}k`}
+                            width={32}
+                          />
+                          <Tooltip
+                            formatter={v => [`${Number(v).toLocaleString('it-IT')} €`, 'Prezzo']}
+                            labelFormatter={d => new Date(d).toLocaleDateString('it-IT')}
+                            contentStyle={{ background: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '11px' }}
+                          />
+                          <Line type="monotone" dataKey="prezzo" stroke="#FBBF24" strokeWidth={2} dot={{ r: 2 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
