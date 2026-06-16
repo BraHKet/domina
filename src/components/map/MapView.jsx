@@ -30,6 +30,37 @@ function makePriceIcon(pricePerMq, isNuovo) {
   })
 }
 
+// ── Spread marker sovrapposti ────────────────────────────────────────────────
+// Più annunci nello stesso palazzo condividono spesso le stesse coordinate (o
+// quasi). Li raggruppiamo e li dispongo a cerchio attorno al punto vero, così
+// restano tutti visibili e cliccabili senza nasconderli dietro un cluster.
+function spreadMarkers(markers) {
+  const gruppi = new Map()
+  markers.forEach(p => {
+    if (p.lat == null || p.lng == null) return
+    const key = `${p.lat.toFixed(4)}_${p.lng.toFixed(4)}`
+    if (!gruppi.has(key)) gruppi.set(key, [])
+    gruppi.get(key).push(p)
+  })
+
+  const risultato = []
+  gruppi.forEach(gruppo => {
+    if (gruppo.length === 1) {
+      const p = gruppo[0]
+      risultato.push({ ...p, displayLat: p.lat, displayLng: p.lng })
+      return
+    }
+    const raggioMetri = 9 + Math.min(gruppo.length, 10) * 2
+    gruppo.forEach((p, i) => {
+      const angolo = (2 * Math.PI * i) / gruppo.length
+      const dLat = (raggioMetri * Math.cos(angolo)) / 111320
+      const dLng = (raggioMetri * Math.sin(angolo)) / (111320 * Math.cos(p.lat * Math.PI / 180))
+      risultato.push({ ...p, displayLat: p.lat + dLat, displayLng: p.lng + dLng })
+    })
+  })
+  return risultato
+}
+
 // ── Popup ─────────────────────────────────────────────────────────────────────
 
 function PopupContent({ property, userId, onSeguito }) {
@@ -368,13 +399,13 @@ export default function MapView({
         />
       )}
 
-      {markers.map(p => {
+      {spreadMarkers(markers).map(p => {
         const isNuovo = !visti.has(String(p.id))
 
         return (
           <Marker
             key={p.id}
-            position={[p.lat, p.lng]}
+            position={[p.displayLat, p.displayLng]}
             icon={makePriceIcon(p.pricePerMq, isNuovo)}
           >
             <Popup closeButton={false}>

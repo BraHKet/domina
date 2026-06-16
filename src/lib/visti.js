@@ -48,7 +48,10 @@ export function marcaVistoLocale(id) {
 export async function marcaVisto(id, userId) {
   marcaVistoLocale(id)
   if (!userId) return
-  await supabase.from('annunci_visti').upsert({ user_id: userId, annuncio_id: String(id) })
+  await supabase.from('annunci_visti').upsert(
+    { user_id: userId, annuncio_id: String(id) },
+    { onConflict: 'user_id,annuncio_id' }
+  )
 }
 
 export async function getVistiRemoti(userId) {
@@ -71,7 +74,10 @@ export async function toggleSeguito(id, userId) {
   } else {
     s.add(sid)
     lsSet(LS_SEGUITI, s)
-    if (userId) await supabase.from('annunci_seguiti').upsert({ user_id: userId, annuncio_id: sid })
+    if (userId) await supabase.from('annunci_seguiti').upsert(
+      { user_id: userId, annuncio_id: sid },
+      { onConflict: 'user_id,annuncio_id' }
+    )
   }
   return s.has(sid)
 }
@@ -90,12 +96,14 @@ export async function syncAlLogin(userId) {
 
   if (vistiLocali.size > 0) {
     await supabase.from('annunci_visti').upsert(
-      [...vistiLocali].map(id => ({ user_id: userId, annuncio_id: id }))
+      [...vistiLocali].map(id => ({ user_id: userId, annuncio_id: id })),
+      { onConflict: 'user_id,annuncio_id' }
     )
   }
   if (seguitiLocali.size > 0) {
     await supabase.from('annunci_seguiti').upsert(
-      [...seguitiLocali].map(id => ({ user_id: userId, annuncio_id: id }))
+      [...seguitiLocali].map(id => ({ user_id: userId, annuncio_id: id })),
+      { onConflict: 'user_id,annuncio_id' }
     )
   }
 }
