@@ -1226,9 +1226,23 @@ export default function Dashboard() {
                   {m.media != null ? `${Math.round(m.media).toLocaleString('it-IT')} €/m²` : '—'}
                 </p>
                 {m.omi && (
-                  <p style={{ margin: '2px 0 0 0', color: '#4B5563', fontSize: '9px' }}>
-                    OMI: {m.omi.prezzo_min}–{m.omi.prezzo_max} €/m²
-                  </p>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    marginTop: '5px',
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    background: 'rgba(96, 165, 250, 0.12)',
+                    border: 'none',
+                  }}>
+                    <span style={{ color: '#60A5FA', fontSize: '9px', fontWeight: '800', letterSpacing: '0.03em' }}>
+                      OMI
+                    </span>
+                    <span style={{ color: '#BFDBFE', fontSize: '11px', fontWeight: '700' }}>
+                      {m.omi.prezzo_min}–{m.omi.prezzo_max} €/m²
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
