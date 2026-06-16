@@ -4,6 +4,7 @@ import { useProperties } from '../hooks/useProperties'
 import { useZone } from '../lib/useZone'
 import { useAuth } from '../hooks/useAuth'
 import { useVisti } from '../hooks/useVisti'
+import { useOmi } from '../hooks/useOmi'
 import { rimuoviSeguiti } from '../lib/visti'
 import { getUltimoStorico, getStoricoCompleto } from '../lib/storico'
 import { loginGoogle, logout } from '../lib/auth'
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const { properties, loading } = useProperties()
   const { zone, addZona, removeZona, updateZona, loading: zoneLoading } = useZone(user?.id)
   const { visti, seguiti, refresh: refreshVisti } = useVisti(user?.id)
+  const { omiData } = useOmi()
   const [storicoRimossi, setStoricoRimossi] = useState({})
   const [notificheOpen, setNotificheOpen] = useState(false)
   const [dettaglioAperto, setDettaglioAperto] = useState(null) // id annuncio o null
@@ -115,6 +117,41 @@ export default function Dashboard() {
     const labels = activeZones.filter(z => matchZona(p, z)).map(z => z.label || 'Zona senza nome')
     return labels.join(', ')
   }
+
+  function dentroGeografico(p, z) {
+    if (z.polygon_points) return pointInPolygon(p.lat, p.lng, z.polygon_points)
+    const dist = Math.sqrt(
+      Math.pow((p.lat - z.center_lat) * 111320, 2) +
+      Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
+    )
+    return dist <= z.radius_m
+  }
+
+  function dentroZoneGeografico(p) {
+    return activeZones.some(z => dentroGeografico(p, z))
+  }
+
+  const STATI_BARRA = [
+    { stato: 'Ottimo / Ristrutturato', label: 'Ristrutturato',   colore: '#10B981', omiStato: 'Ottimo' },
+    { stato: 'Nuovo / In costruzione', label: 'In costruzione',  colore: '#10B981', omiStato: 'Ottimo' },
+    { stato: 'Da ristrutturare',       label: 'Da ristrutturare', colore: '#FBBF24', omiStato: 'Normale' },
+    { stato: 'Buono / Abitabile',      label: 'Abitabile',       colore: '#FBBF24', omiStato: 'Normale' },
+  ]
+
+  const statiSelezionati = new Set(
+    activeZones.flatMap(z => z.stato_filtro ? z.stato_filtro.split(',') : [])
+  )
+
+  const metricheBarra = hasZone
+    ? STATI_BARRA
+      .filter(({ stato }) => statiSelezionati.has(stato))
+      .map(({ stato, label, colore, omiStato }) => {
+        const annunci = properties.filter(p => p.pricePerMq && p.type === stato && dentroZoneGeografico(p))
+        const media = annunci.length > 0 ? annunci.reduce((s, p) => s + p.pricePerMq, 0) / annunci.length : null
+        const omi = omiData.find(r => r.tipologia === 'Abitazioni civili' && r.stato_conservativo === omiStato)
+        return { label, colore, count: annunci.length, media, omi }
+      })
+    : []
 
   const vistiPerFiltro = (soloNuovi && vistiSnapshot) ? vistiSnapshot : visti
 
@@ -1137,6 +1174,67 @@ export default function Dashboard() {
           Excel
         </button>
       </div>
+
+      {/* ── Barra Metriche Zona (Bottom Center) ── */}
+      {hasZone && metricheBarra.some(m => m.media != null) && (
+        <div style={{
+          position: 'absolute',
+          bottom: '100px',
+          left: '410px',
+          right: '180px',
+          zIndex: 1000,
+          background: 'rgb(0, 0, 0)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '16px',
+          padding: '14px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          pointerEvents: 'auto',
+        }}>
+          {metricheBarra.map((m, i) => (
+            <div
+              key={m.label}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '0 16px',
+                borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                minWidth: 0,
+              }}
+            >
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: m.colore, flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <p style={{
+                  margin: 0,
+                  color: '#6B7280',
+                  fontSize: '9px',
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {m.label}{m.count > 0 ? ` (${m.count})` : ''}
+                </p>
+                <p style={{ margin: '2px 0 0 0', color: 'white', fontSize: '15px', fontWeight: '800' }}>
+                  {m.media != null ? `${Math.round(m.media).toLocaleString('it-IT')} €/m²` : '—'}
+                </p>
+                {m.omi && (
+                  <p style={{ margin: '2px 0 0 0', color: '#4B5563', fontSize: '9px' }}>
+                    OMI: {m.omi.prezzo_min}–{m.omi.prezzo_max} €/m²
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Legenda (Bottom Right) ── */}
       <div style={{
