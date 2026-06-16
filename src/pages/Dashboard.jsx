@@ -79,34 +79,41 @@ export default function Dashboard() {
     return annunci.reduce((sum, p) => sum + p.pricePerMq, 0) / annunci.length
   }
 
+  function matchZona(p, z) {
+    let dentro = false
+
+    if (z.polygon_points) {
+      dentro = pointInPolygon(p.lat, p.lng, z.polygon_points)
+    } else {
+      const dist = Math.sqrt(
+        Math.pow((p.lat - z.center_lat) * 111320, 2) +
+        Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
+      )
+      dentro = dist <= z.radius_m
+    }
+
+    if (!dentro) return false
+    const astaOk = z.includi_aste ? true : !p.isAsta
+    if (!astaOk) return false
+    const statoFiltro = z.stato_filtro
+    const activeStates = statoFiltro ? statoFiltro.split(',') : []
+    if (activeStates.length > 0 && !activeStates.includes(p.type)) return false
+
+    const isCompetitor = statoFiltro && (statoFiltro.includes('Ottimo') || statoFiltro.includes('Nuovo'))
+    if (isCompetitor) return true
+
+    const media = mediaZona(z)
+    if (media === null) return false
+    return p.pricePerMq != null && p.pricePerMq <= media
+  }
+
   function dentroZone(p) {
-    return activeZones.some(z => {
-      let dentro = false
+    return activeZones.some(z => matchZona(p, z))
+  }
 
-      if (z.polygon_points) {
-        dentro = pointInPolygon(p.lat, p.lng, z.polygon_points)
-      } else {
-        const dist = Math.sqrt(
-          Math.pow((p.lat - z.center_lat) * 111320, 2) +
-          Math.pow((p.lng - z.center_lng) * 111320 * Math.cos(z.center_lat * Math.PI / 180), 2)
-        )
-        dentro = dist <= z.radius_m
-      }
-
-      if (!dentro) return false
-      const astaOk = z.includi_aste ? true : !p.isAsta
-      if (!astaOk) return false
-      const statoFiltro = z.stato_filtro
-      const activeStates = statoFiltro ? statoFiltro.split(',') : []
-      if (activeStates.length > 0 && !activeStates.includes(p.type)) return false
-
-      const isCompetitor = statoFiltro && (statoFiltro.includes('Ottimo') || statoFiltro.includes('Nuovo'))
-      if (isCompetitor) return true
-
-      const media = mediaZona(z)
-      if (media === null) return false
-      return p.pricePerMq != null && p.pricePerMq <= media
-    })
+  function zoneDiProperty(p) {
+    const labels = activeZones.filter(z => matchZona(p, z)).map(z => z.label || 'Zona senza nome')
+    return labels.join(', ')
   }
 
   const vistiPerFiltro = (soloNuovi && vistiSnapshot) ? vistiSnapshot : visti
@@ -159,8 +166,14 @@ export default function Dashboard() {
     const dati = properties.filter(p => seguiti.has(String(p.id)) && dentroZone(p))
     if (dati.length === 0) return
 
+    const conPrezzoMq = dati.filter(p => p.pricePerMq != null)
+    const mediaPrezzoMq = conPrezzoMq.length > 0
+      ? conPrezzoMq.reduce((sum, p) => sum + p.pricePerMq, 0) / conPrezzoMq.length
+      : null
+
     const righe = dati.map(p => ({
       'ID': p.id,
+      'Zona': zoneDiProperty(p),
       'Indirizzo': p.address,
       'Indirizzo completo': p.fullAddress,
       'Prezzo (€)': p.price,
@@ -173,11 +186,21 @@ export default function Dashboard() {
       'Stato immobile': p.stato ?? '',
       'Tipo': p.type ?? '',
       'Giorni mercato': p.giorniMercato ?? '',
+      'Agenzia': p.agenzia ?? '',
+      'Cellulare': p.cellulare ?? '',
       'URL': p.url ?? '',
       'Immagine': p.imageUrl ?? '',
     }))
 
-    const ws = XLSX.utils.json_to_sheet(righe)
+    const ws = XLSX.utils.json_to_sheet(righe, { origin: 'A3' })
+    const numCols = Object.keys(righe[0]).length
+    XLSX.utils.sheet_add_aoa(ws, [[
+      mediaPrezzoMq != null
+        ? `Media €/mq esportazione: ${Math.round(mediaPrezzoMq).toLocaleString('it-IT')} €/m²`
+        : 'Media €/mq esportazione: —'
+    ]], { origin: 'A1' })
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: numCols - 1 } }]
+
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Seguiti')
     XLSX.writeFile(wb, 'seguiti_domina.xlsx')

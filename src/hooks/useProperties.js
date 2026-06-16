@@ -27,6 +27,8 @@ function mapRow(row) {
     imageUrl:     row.immagine_stanza ?? null,
     pricePerMq:   row.prezzo_mq ?? null,
     url:          row.url ?? null,
+    agenzia:      row.agenzia ?? null,
+    cellulare:    row.cellulare ?? null,
     giorniMercato,
   }
 }
@@ -39,7 +41,7 @@ export function useProperties() {
     async function fetch() {
       const { data, error: supabaseError } = await supabase
         .from('barriera-di-milano-attuale')
-        .select('id, indirizzo, tipologia, microzona, prezzo_valore, superficie, locali, piano, ascensore, latitudine, longitudine, stato_immobile, immagine_stanza, prezzo_mq, url, data_creazione')
+        .select('id, indirizzo, tipologia, microzona, prezzo_valore, superficie, locali, piano, ascensore, latitudine, longitudine, stato_immobile, immagine_stanza, prezzo_mq, url, data_creazione, agenzia, cellulare')
         .order('id')
 
       if (supabaseError) {
