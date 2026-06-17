@@ -42,7 +42,7 @@ export function useProperties() {
     async function fetch() {
       const { data, error: supabaseError } = await supabase
         .from('annunci_attuali')
-        .select('id, indirizzo, tipologia, microzona, prezzo_valore, superficie, locali, piano, ascensore, latitudine, longitudine, stato_immobile, immagine_stanza, prezzo_mq, url, data_creazione, agenzia, cellulare')
+        .select('id, indirizzo, tipologia, microzona, citta, prezzo_valore, superficie, locali, piano, ascensore, latitudine, longitudine, stato_immobile, immagine_stanza, prezzo_mq, url, data_creazione, agenzia, cellulare')
         .order('id')
 
       if (supabaseError) {
