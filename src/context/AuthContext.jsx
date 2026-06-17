@@ -28,16 +28,12 @@ export function AuthProvider({ children }) {
     // Bug aperto in Supabase + Chrome Memory Saver: la tab sospesa a metà di un
     // refresh token causa uno stato auth incoerente al risveglio. Soluzione pragmatica:
     // reload pulito se la tab era in background per più di 15 secondi.
-    let hiddenAt = null
+    let wasHidden = false
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
-        hiddenAt = Date.now()
-      } else if (document.visibilityState === 'visible' && hiddenAt) {
-        const awayMs = Date.now() - hiddenAt
-        hiddenAt = null
-        if (awayMs > 15000) {
-          window.location.reload()
-        }
+        wasHidden = true
+      } else if (document.visibilityState === 'visible' && wasHidden) {
+        window.location.reload()
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
