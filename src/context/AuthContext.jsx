@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { syncAlLogin } from '../lib/visti'
 
@@ -7,6 +7,11 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const userRef = useRef(null)
+
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -32,7 +37,7 @@ export function AuthProvider({ children }) {
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
         wasHidden = true
-      } else if (document.visibilityState === 'visible' && wasHidden) {
+      } else if (document.visibilityState === 'visible' && wasHidden && userRef.current) {
         window.location.reload()
       }
     }
