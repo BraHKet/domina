@@ -29,6 +29,7 @@ function mapRow(row) {
     url:          row.url ?? null,
     agenzia:      row.agenzia ?? null,
     cellulare:    row.cellulare ?? null,
+    zona:         row.microzona ?? null,
     giorniMercato,
   }
 }

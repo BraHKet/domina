@@ -210,7 +210,7 @@ export default function Dashboard() {
 
     const righe = dati.map(p => ({
       'ID': p.id,
-      'Zona': zoneDiProperty(p),
+      'Zona': p.zona ?? '',
       'Indirizzo': p.address,
       'Indirizzo completo': p.fullAddress,
       'Prezzo (€)': p.price,
