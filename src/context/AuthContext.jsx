@@ -1,52 +1,49 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { supabase, resetSupabaseClient } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { syncAlLogin } from '../lib/visti'
 
 const AuthContext = createContext(null)
-
-function subscribeToAuth(client, setUser, setLoading) {
-  client.auth.getSession().then(({ data }) => {
-    console.log('SESSION:', data.session)
-    setUser(data.session?.user ?? null)
-    setLoading(false)
-  })
-  const { data: listener } = client.auth.onAuthStateChange(async (event, session) => {
-    console.log('AUTH EVENT:', event, session)
-    const u = session?.user ?? null
-    setUser(u)
-    setLoading(false)
-    if (event === 'SIGNED_IN' && u) {
-      await syncAlLogin(u.id)
-    }
-  })
-  return () => listener.subscription.unsubscribe()
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let unsubscribe = subscribeToAuth(supabase, setUser, setLoading)
-    let hiddenAt = null
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('SESSION:', data.session)
+      setUser(data.session?.user ?? null)
+      setLoading(false)
+    })
 
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AUTH EVENT:', event, session)
+      const u = session?.user ?? null
+      setUser(u)
+      setLoading(false)
+      if (event === 'SIGNED_IN' && u) {
+        await syncAlLogin(u.id)
+      }
+    })
+
+    // Bug aperto in Supabase + Chrome Memory Saver: la tab sospesa a metà di un
+    // refresh token causa uno stato auth incoerente al risveglio. Soluzione pragmatica:
+    // reload pulito se la tab era in background per più di 15 secondi.
+    let hiddenAt = null
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
         hiddenAt = Date.now()
       } else if (document.visibilityState === 'visible' && hiddenAt) {
-        const away = Date.now() - hiddenAt
+        const awayMs = Date.now() - hiddenAt
         hiddenAt = null
-        if (away > 15000) {
-          unsubscribe()
-          resetSupabaseClient()
-          unsubscribe = subscribeToAuth(supabase, setUser, setLoading)
+        if (awayMs > 15000) {
+          window.location.reload()
         }
       }
     }
-
     document.addEventListener('visibilitychange', onVisibility)
+
     return () => {
-      unsubscribe()
+      listener.subscription.unsubscribe()
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
