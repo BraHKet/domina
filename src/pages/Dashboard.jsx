@@ -11,6 +11,30 @@ import { loginGoogle, logout } from '../lib/auth'
 import * as XLSX from 'xlsx'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
+const CITTA_COORDS = [
+  { name: 'Torino',  lat: 45.093,  lng: 7.685 },
+  { name: 'Milano',  lat: 45.4654, lng: 9.1866 },
+  { name: 'Brescia', lat: 45.5416, lng: 10.2118 },
+]
+
+function cittaPiuVicina(lat, lng) {
+  return CITTA_COORDS.reduce((best, c) => {
+    const d = Math.pow(lat - c.lat, 2) + Math.pow(lng - c.lng, 2)
+    return d < best.d ? { name: c.name, d } : best
+  }, { name: null, d: Infinity }).name
+}
+
+function centroZona(z) {
+  if (z.center_lat != null && z.center_lng != null)
+    return { lat: z.center_lat, lng: z.center_lng }
+  if (z.polygon_points?.length > 0) {
+    const lat = z.polygon_points.reduce((s, p) => s + p.lat, 0) / z.polygon_points.length
+    const lng = z.polygon_points.reduce((s, p) => s + p.lng, 0) / z.polygon_points.length
+    return { lat, lng }
+  }
+  return null
+}
+
 function pointInPolygon(lat, lng, points) {
   let inside = false
   for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
@@ -61,7 +85,14 @@ export default function Dashboard() {
     setInputInclAste(true)
   }
 
-  const activeZones = zone.filter(z => visibleZoneIds.has(z.id))
+  const cittaAttiva = cittaPiuVicina(mapCenter[0], mapCenter[1])
+
+  const zonePerCitta = zone.filter(z => {
+    const c = centroZona(z)
+    return c ? cittaPiuVicina(c.lat, c.lng) === cittaAttiva : true
+  })
+
+  const activeZones = zonePerCitta.filter(z => visibleZoneIds.has(z.id))
   const hasZone = activeZones.length > 0
 
   function mediaZona(z) {
@@ -151,7 +182,7 @@ export default function Dashboard() {
       .map(({ stato, label, colore, omiStato }) => {
         const annunci = properties.filter(p => p.pricePerMq && p.type === stato && dentroZoneGeografico(p))
         const media = annunci.length > 0 ? annunci.reduce((s, p) => s + p.pricePerMq, 0) / annunci.length : null
-        const omi = omiData.find(r => r.tipologia === 'Abitazioni civili' && r.stato_conservativo === omiStato)
+        const omi = omiData.find(r => r.citta === cittaAttiva && r.tipologia === 'Abitazioni civili' && r.stato_conservativo === omiStato)
         return { label, colore, count: annunci.length, media, omi }
       })
     : []
@@ -868,7 +899,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="no-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1 }}>
-                  {zone.map(z => {
+                  {zonePerCitta.map(z => {
                     const isCompetitor = z.stato_filtro && (z.stato_filtro.includes('Ottimo') || z.stato_filtro.includes('Nuovo'))
                     const themeColor = isCompetitor ? '#10B981' : '#FBBF24'
                     const isVisible = visibleZoneIds.has(z.id)
