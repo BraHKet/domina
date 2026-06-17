@@ -14,7 +14,7 @@ function mapRow(row) {
   return {
     id:           row.id,
     address:      row.indirizzo ?? '',
-    fullAddress:  `${row.tipologia ?? ''} ${row.indirizzo ?? ''}, ${row.microzona ?? ''}, Torino`,
+    fullAddress:  `${row.tipologia ?? ''} ${row.indirizzo ?? ''}, ${row.microzona ?? ''}, ${row.citta ?? ''}`,
     price:        row.prezzo_valore ?? 0,
     size:         row.superficie ?? 0,
     rooms:        row.locali ?? 0,
