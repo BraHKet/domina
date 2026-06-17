@@ -5,6 +5,14 @@ import 'leaflet/dist/leaflet.css'
 import { haversineMeters } from '../../lib/variables/haversineMeters'
 import { marcaVisto, toggleSeguito, isSeguito } from '../../lib/visti'
 
+function FlyTo({ center, zoom }) {
+  const map = useMap()
+  useEffect(() => {
+    map.flyTo(center, zoom, { duration: 1.2 })
+  }, [center[0], center[1]])
+  return null
+}
+
 // ── Icone marker ──────────────────────────────────────────────────────────────
 
 function makePriceIcon(pricePerMq, isNuovo) {
@@ -328,6 +336,7 @@ export default function MapView({
       style={{ height, width: '100%', borderRadius: '14px' }}
       zoomControl={true}
     >
+      <FlyTo center={center} zoom={zoom} />
       <TileLayer
         attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

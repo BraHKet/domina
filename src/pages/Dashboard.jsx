@@ -34,6 +34,9 @@ export default function Dashboard() {
   const [dettaglioAperto, setDettaglioAperto] = useState(null) // id annuncio o null
   const [dettaglioStorico, setDettaglioStorico] = useState([])
 
+  const [mapCenter, setMapCenter] = useState([45.093, 7.685])
+  const [mapZoom, setMapZoom] = useState(15)
+
   const [drawMode, setDrawMode] = useState(null) // 'competitor' | 'opportunita' | null
   const [pendingCircle, setPendingCircle] = useState(null)
   const [inputLabel, setInputLabel] = useState('')
@@ -362,8 +365,8 @@ export default function Dashboard() {
         zIndex: 1
       }}>
         <MapView
-          center={[45.093, 7.685]}
-          zoom={15}
+          center={mapCenter}
+          zoom={mapZoom}
           markers={visibili}
           zone={zone.filter(z => visibleZoneIds.has(z.id))}
           pendingCircle={pendingCircle}
@@ -579,7 +582,7 @@ export default function Dashboard() {
         </div>
 
         {/* Scheda Dinamica (Creazione OR Lista Zone) */}
-        <div style={{
+        <div className="no-scrollbar" style={{
           flex: 1,
           overflowY: 'auto',
           padding: '18px',
@@ -864,7 +867,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1 }}>
+                <div className="no-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1 }}>
                   {zone.map(z => {
                     const isCompetitor = z.stato_filtro && (z.stato_filtro.includes('Ottimo') || z.stato_filtro.includes('Nuovo'))
                     const themeColor = isCompetitor ? '#10B981' : '#FBBF24'
@@ -1175,12 +1178,49 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* ── Bottoni navigazione città ── */}
+      <div style={{
+        position: 'absolute',
+        top: '92px',
+        right: '24px',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+        pointerEvents: 'auto',
+      }}>
+        {[
+          { label: 'Torino',  center: [45.093, 7.685] },
+          { label: 'Milano',  center: [45.4654, 9.1866] },
+          { label: 'Brescia', center: [45.5416, 10.2118] },
+        ].map(({ label, center }) => (
+          <button
+            key={label}
+            onClick={() => { setMapCenter(center); setMapZoom(14) }}
+            style={{
+              background: '#000',
+              border: '1.5px solid rgba(255,255,255,0.08)',
+              borderRadius: '10px',
+              color: '#fff',
+              fontSize: '10px',
+              fontWeight: '700',
+              padding: '7px 14px',
+              cursor: 'pointer',
+              letterSpacing: '0.04em',
+              textAlign: 'center',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Barra Metriche Zona (Bottom Center) ── */}
       {hasZone && metricheBarra.some(m => m.media != null) && (
         <div style={{
           position: 'absolute',
           bottom: '65px',
-          left: '410px',
+          left: '460px',
           right: '180px',
           zIndex: 1000,
           background: 'rgb(0, 0, 0)',

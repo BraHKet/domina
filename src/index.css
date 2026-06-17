@@ -13,3 +13,11 @@
 .leaflet-popup-content {
   margin: 0 !important;
 }
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
