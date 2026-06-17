@@ -1,6 +1,4 @@
-import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { supabase } from './lib/supabase'
 import { useAuth } from './hooks/useAuth'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
@@ -9,10 +7,6 @@ import AuthCallback from './pages/AuthCallback'
 
 export default function App() {
   const { user } = useAuth()
-
-  useEffect(() => {
-    supabase.auth.getSession()
-  }, [])
 
   return (
     <BrowserRouter>
