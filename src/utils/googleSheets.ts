@@ -2,8 +2,10 @@ import type { ClickEvent, LeadSubmission } from '../types/property';
 
 const GOOGLE_SHEET_URL_KEY = 'domina_google_sheet_webhook_url';
 
-// Default fallback or environment variable if set
-const DEFAULT_WEBHOOK_URL = import.meta.env.VITE_GOOGLE_SHEET_WEBHOOK_URL || '';
+// Default fallback: Lorenzo's Google Sheet Webhook for all users worldwide
+const DEFAULT_WEBHOOK_URL =
+  import.meta.env.VITE_GOOGLE_SHEET_WEBHOOK_URL ||
+  'https://script.google.com/macros/s/AKfycbyzKOHX2qh0AyBWfhF05KZFNyJFAZ7Ymyp61xKFaAvDDKjAUAJx_kfcoSf2zJCqpYtH/exec';
 
 export function getGoogleSheetWebhookUrl(): string {
   try {
