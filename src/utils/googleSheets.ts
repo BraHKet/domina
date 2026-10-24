@@ -61,6 +61,7 @@ export async function syncLeadToGoogleSheet(lead: LeadSubmission): Promise<boole
       },
       body: JSON.stringify(payload),
       mode: 'no-cors',
+      keepalive: true,
     });
     return true;
   } catch (error) {
@@ -101,6 +102,7 @@ export async function syncClickToGoogleSheet(click: ClickEvent): Promise<boolean
       },
       body: JSON.stringify(payload),
       mode: 'no-cors',
+      keepalive: true,
     });
     return true;
   } catch (error) {

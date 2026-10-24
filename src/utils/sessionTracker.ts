@@ -7,27 +7,52 @@
  */
 
 const SESSION_START_TIME = Date.now();
-let cachedGeoLocation: string = '';
 
-// Inizializza il rilevamento della città di connessione in background
-export async function initGeoLocation(): Promise<string> {
-  if (cachedGeoLocation) return cachedGeoLocation;
-
-  // Prova a leggere da sessionStorage se già recuperato
+function getInitialCityFallback(): string {
   try {
     const saved = sessionStorage.getItem('domina_user_geo');
-    if (saved) {
-      cachedGeoLocation = saved;
-      return saved;
-    }
+    if (saved && saved.trim() !== '') return saved;
   } catch {
     // Ignore error
   }
 
-  // Chiamata asincrona a servizio Geo-IP gratuito e veloce
   try {
-    // ipwho.is è veloce, gratuito e supporta CORS
-    const res = await fetch('https://ipwho.is/', { cache: 'force-cache' });
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const parts = tz.split('/');
+    const zone = parts[parts.length - 1].replace(/_/g, ' ');
+    return zone || 'Italia';
+  } catch {
+    return 'Italia';
+  }
+}
+
+let cachedGeoLocation: string = getInitialCityFallback();
+
+/**
+ * Restituisce istantaneamente la città senza bloccare il flusso (usata per invii immediati).
+ */
+export function getFastUserCity(): string {
+  return cachedGeoLocation || 'Italia';
+}
+
+// Inizializza il rilevamento della città di connessione in background con timeout rigoroso
+export async function initGeoLocation(): Promise<string> {
+  // Se già ottenuto da ipwhois, usalo
+  if (cachedGeoLocation && !cachedGeoLocation.includes('Italia') && !cachedGeoLocation.includes('Rome')) {
+    return cachedGeoLocation;
+  }
+
+  // Chiamata asincrona a servizio Geo-IP gratuito con timeout di 1.5 secondi
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+    const res = await fetch('https://ipwho.is/', {
+      signal: controller.signal,
+      cache: 'force-cache',
+    });
+    clearTimeout(timeoutId);
+
     if (res.ok) {
       const data = await res.json();
       if (data && data.success !== false) {
@@ -47,36 +72,13 @@ export async function initGeoLocation(): Promise<string> {
       }
     }
   } catch {
-    // Fallback secondario su ipapi.co
-    try {
-      const res2 = await fetch('https://ipapi.co/json/');
-      if (res2.ok) {
-        const data2 = await res2.json();
-        const loc2 = [data2.city, data2.region, data2.country_name].filter(Boolean).join(', ');
-        if (loc2) {
-          cachedGeoLocation = loc2;
-          return loc2;
-        }
-      }
-    } catch {
-      // Ignore error
-    }
+    // Non bloccare mai se la rete è lenta o bloccata da adblocker
   }
 
-  // Fallback basato sul fuso orario del browser se la chiamata di rete fallisce
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const parts = tz.split('/');
-    const zone = parts[parts.length - 1].replace(/_/g, ' ');
-    cachedGeoLocation = `${zone} (Fuso orario)`;
-    return cachedGeoLocation;
-  } catch {
-    cachedGeoLocation = 'Italia';
-    return cachedGeoLocation;
-  }
+  return cachedGeoLocation;
 }
 
-// Avvia immediatamente il recupero in background all'import
+// Avvia immediatamente il recupero in background
 initGeoLocation().catch(() => {});
 
 /**
