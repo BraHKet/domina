@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Mail, RotateCcw, LogOut, Shield } from 'lucide-react';
+import { Plus, RotateCcw, LogOut, Shield, BarChart3 } from 'lucide-react';
 
 interface HeaderProps {
   isAdmin: boolean;
@@ -82,10 +82,11 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={onOpenLeads}
-              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold flex items-center space-x-1 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold flex items-center space-x-1.5 transition-colors"
+              title="Monitoraggio clic e contatti acquisiti"
             >
-              <Mail className="w-3.5 h-3.5" />
-              <span>Lead ({leadsCount})</span>
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Clic & Lead ({leadsCount})</span>
             </button>
 
             <button

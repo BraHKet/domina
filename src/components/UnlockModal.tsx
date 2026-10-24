@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { X, Lock, CheckCircle2, ArrowRight } from 'lucide-react';
+import type { ClickSource } from '../types/property';
 import { saveLead } from '../utils/storage';
 
 interface UnlockModalProps {
   isOpen: boolean;
   onClose: () => void;
+  sourceKey?: ClickSource | string;
   sourceTitle?: string;
   propertyName?: string;
   hiddenCount?: number;
@@ -14,6 +16,7 @@ interface UnlockModalProps {
 export const UnlockModal: React.FC<UnlockModalProps> = ({
   isOpen,
   onClose,
+  sourceKey = 'cluster_riservato',
   sourceTitle = 'Sblocca le location',
   propertyName,
   hiddenCount,
@@ -32,7 +35,7 @@ export const UnlockModal: React.FC<UnlockModalProps> = ({
       return;
     }
 
-    saveLead(email, sourceTitle, propertyName, hiddenCount, 'Padova');
+    saveLead(email, sourceKey, sourceTitle, propertyName, hiddenCount, 'Padova');
     setIsSubmitted(true);
     setError('');
     onLeadSaved();

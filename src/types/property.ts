@@ -75,12 +75,34 @@ export interface Property {
   isDemonstrative: boolean;
 }
 
+export type ClickSource =
+  | 'analisi_urbanistica'
+  | 'dimmi_a_chi_proporla'
+  | 'trova_proprietario'
+  | 'cluster_riservato';
+
+export interface ClickEvent {
+  id: string;
+  source: ClickSource;
+  sourceLabel: string;
+  propertyName?: string;
+  propertyAddress?: string;
+  timestamp: string;
+}
+
+export interface ClickStats {
+  totalClicks: number;
+  bySource: Record<ClickSource, number>;
+}
+
 export interface LeadSubmission {
   id: string;
   email: string;
   timestamp: string;
-  source: string; // 'cluster_riservato' | 'analisi_urbanistica' | 'dimmi_a_chi_proporla' | 'trova_proprietario'
+  source: ClickSource | string;
+  sourceLabel?: string;
   propertyName?: string;
   hiddenCount?: number;
   city: string;
 }
+

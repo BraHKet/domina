@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import type { Property, PropertyCategory, LeadSubmission } from './types/property';
+import type { Property, PropertyCategory, LeadSubmission, ClickSource } from './types/property';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { MapView } from './components/MapView';
@@ -15,6 +15,7 @@ import {
   getStoredLeads,
   getStoredAdminAuth,
   setStoredAdminAuth,
+  recordClick,
 } from './utils/storage';
 
 export const App: React.FC = () => {
@@ -38,6 +39,7 @@ export const App: React.FC = () => {
 
   // Unified Lead / Unlock Modal State
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  const [unlockSourceKey, setUnlockSourceKey] = useState<ClickSource>('cluster_riservato');
   const [unlockTitle, setUnlockTitle] = useState('Sblocca le location');
   const [unlockPropertyName, setUnlockPropertyName] = useState<string | undefined>(undefined);
   const [unlockHiddenCount, setUnlockHiddenCount] = useState<number | undefined>(undefined);
@@ -175,12 +177,29 @@ export const App: React.FC = () => {
     actionType: 'analisi' | 'target' | 'proprietario',
     prop: Property
   ) => {
+    const sourceKeys: Record<string, ClickSource> = {
+      analisi: 'analisi_urbanistica',
+      target: 'dimmi_a_chi_proporla',
+      proprietario: 'trova_proprietario',
+    };
     const titles: Record<string, string> = {
       analisi: 'Analisi urbanistica',
       target: 'Dimmi a chi proporla',
       proprietario: 'Trova il proprietario',
     };
+    const labels: Record<string, string> = {
+      analisi: 'Vedi analisi urbanistica',
+      target: 'Dimmi a chi proporla',
+      proprietario: 'Trova il proprietario',
+    };
 
+    const key = sourceKeys[actionType] || 'analisi_urbanistica';
+    const label = labels[actionType] || 'Vedi analisi';
+
+    // Track click event immediately
+    recordClick(key, label, prop.name, prop.address);
+
+    setUnlockSourceKey(key);
     setUnlockTitle(titles[actionType] || 'Sblocca le location');
     setUnlockPropertyName(prop.name);
     setUnlockHiddenCount(undefined);
@@ -189,6 +208,10 @@ export const App: React.FC = () => {
 
   // Click on the locked round pin on the map
   const handleOpenClusterUnlock = useCallback((count: number) => {
+    // Track cluster click event
+    recordClick('cluster_riservato', 'Pin cluster riservati', undefined, `${count} immobili`);
+
+    setUnlockSourceKey('cluster_riservato');
     setUnlockTitle('Opportunità riservate');
     setUnlockPropertyName(undefined);
     setUnlockHiddenCount(count);
@@ -270,6 +293,7 @@ export const App: React.FC = () => {
       <UnlockModal
         isOpen={unlockModalOpen}
         onClose={() => setUnlockModalOpen(false)}
+        sourceKey={unlockSourceKey}
         sourceTitle={unlockTitle}
         propertyName={unlockPropertyName}
         hiddenCount={unlockHiddenCount}
