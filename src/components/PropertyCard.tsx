@@ -75,11 +75,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
                 <button
                   onClick={() => onToggleVisibility?.(property)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-semibold flex items-center space-x-1 backdrop-blur-sm shadow-md transition-all ${
-                    property.isVisibleToUser !== false
-                      ? 'bg-emerald-900/85 text-emerald-200 hover:bg-emerald-800'
-                      : 'bg-amber-900/85 text-amber-200 hover:bg-amber-800'
-                  }`}
+                  className={`px-2 py-1 rounded-lg text-[11px] font-semibold flex items-center space-x-1 backdrop-blur-sm shadow-md transition-all ${property.isVisibleToUser !== false
+                    ? 'bg-emerald-900/85 text-emerald-200 hover:bg-emerald-800'
+                    : 'bg-amber-900/85 text-amber-200 hover:bg-amber-800'
+                    }`}
                   title="Modifica visibilità per l'utente"
                 >
                   {property.isVisibleToUser !== false ? (
@@ -128,16 +127,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
               {/* Dicitura Dismesso o Attivo */}
               <span
-                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center space-x-1 ${
-                  isAttivo
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-amber-50 text-amber-700 border border-amber-200'
-                }`}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center space-x-1 ${isAttivo
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                  }`}
               >
                 <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isAttivo ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-                  }`}
+                  className={`w-1.5 h-1.5 rounded-full ${isAttivo ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                    }`}
                 />
                 <span>{isAttivo ? 'Attivo' : 'Dismesso'}</span>
               </span>
@@ -226,7 +223,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 className="w-full py-2.5 px-2 rounded-xl flex items-center justify-center space-x-1.5 bg-[#0d6e5a] hover:bg-[#095747] text-white font-semibold text-xs tracking-tight shadow-xs transition-all"
               >
                 <FileCheck2 className="w-3.5 h-3.5" />
-                <span className="truncate">Vedi analisi urbanistica</span>
+                <span className="truncate">Analisi urbanistica</span>
               </button>
 
               <button
@@ -234,7 +231,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 className="w-full py-2.5 px-2 rounded-xl flex items-center justify-center space-x-1.5 bg-gray-900 hover:bg-black text-white font-semibold text-xs tracking-tight shadow-xs transition-all"
               >
                 <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span className="truncate">Dimmi a chi proporla</span>
+                <span className="truncate">A chi proporla?</span>
               </button>
             </div>
 
@@ -306,11 +303,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                             € {item.revenue.toLocaleString('it-IT')}
                           </span>
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[10px] font-semibold ${
-                              item.margin >= 0
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
+                            className={`px-1.5 py-0.2 rounded text-[10px] font-semibold ${item.margin >= 0
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-red-100 text-red-800'
+                              }`}
                           >
                             {item.margin >= 0 ? `+${item.margin}%` : `${item.margin}%`}
                           </span>

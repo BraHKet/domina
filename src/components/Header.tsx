@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <span className="hidden sm:inline text-xs text-slate-400 font-normal tracking-normal border-l border-slate-700/60 pl-6">
-            Real Estate Location Intelligence
+
           </span>
         </div>
 

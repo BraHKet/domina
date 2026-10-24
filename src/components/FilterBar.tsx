@@ -53,34 +53,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 lg:max-w-4xl">
           {/* Row 1 on mobile: Search + Dropdown */}
           <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
-            {/* Search Input */}
-            <div className="relative flex-1 sm:w-64 lg:w-80">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Cerca per indirizzo o nome immobile..."
-                className="w-full pl-9 pr-8 py-2 rounded-lg border border-gray-200 bg-white text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0d6e5a] focus:ring-1 focus:ring-[#0d6e5a]/20 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => onSearchChange('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
-                  title="Cancella ricerca"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+
 
             {/* Tipologie Dropdown */}
             <div className="relative flex-shrink-0" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className={`px-3 py-2 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-50 flex items-center space-x-1.5 sm:space-x-2 transition-colors ${
-                  selectedCategory !== 'all' ? 'border-[#0d6e5a] text-[#0d6e5a] font-medium' : 'text-gray-700'
-                }`}
+                className={`px-3 py-2 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-50 flex items-center space-x-1.5 sm:space-x-2 transition-colors ${selectedCategory !== 'all' ? 'border-[#0d6e5a] text-[#0d6e5a] font-medium' : 'text-gray-700'
+                  }`}
               >
                 <span className="truncate max-w-[110px] sm:max-w-none">{getDropdownLabel()}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -93,9 +73,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                       onCategoryChange('all');
                       setDropdownOpen(false);
                     }}
-                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
-                      selectedCategory === 'all' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${selectedCategory === 'all' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
+                      }`}
                   >
                     <span>Tutte le tipologie</span>
                     <span className="text-[11px] text-gray-400">({totalCount})</span>
@@ -105,9 +84,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                       onCategoryChange('negozi');
                       setDropdownOpen(false);
                     }}
-                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
-                      selectedCategory === 'negozi' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${selectedCategory === 'negozi' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
+                      }`}
                   >
                     <span>Negozi e locali</span>
                   </button>
@@ -116,9 +94,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                       onCategoryChange('capannoni');
                       setDropdownOpen(false);
                     }}
-                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
-                      selectedCategory === 'capannoni' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${selectedCategory === 'capannoni' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
+                      }`}
                   >
                     <span>Capannoni</span>
                   </button>
@@ -127,9 +104,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                       onCategoryChange('altri');
                       setDropdownOpen(false);
                     }}
-                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
-                      selectedCategory === 'altri' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
-                    }`}
+                    className={`w-full px-3.5 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${selectedCategory === 'altri' ? 'text-[#0d6e5a] font-semibold bg-emerald-50/50' : 'text-gray-700'
+                      }`}
                   >
                     <span>Altri immobili</span>
                   </button>
@@ -148,11 +124,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Quick Pill: Negozi e locali */}
             <button
               onClick={() => onCategoryChange(selectedCategory === 'negozi' ? 'all' : 'negozi')}
-              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${
-                selectedCategory === 'negozi'
+              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${selectedCategory === 'negozi'
                   ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Store className="w-3.5 h-3.5 text-gray-500" />
               <span>Negozi e locali</span>
@@ -161,11 +136,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Quick Pill: Capannoni */}
             <button
               onClick={() => onCategoryChange(selectedCategory === 'capannoni' ? 'all' : 'capannoni')}
-              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${
-                selectedCategory === 'capannoni'
+              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${selectedCategory === 'capannoni'
                   ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Warehouse className="w-3.5 h-3.5 text-gray-500" />
               <span>Capannoni</span>
@@ -174,11 +148,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Quick Pill: Altri immobili */}
             <button
               onClick={() => onCategoryChange(selectedCategory === 'altri' ? 'all' : 'altri')}
-              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${
-                selectedCategory === 'altri'
+              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${selectedCategory === 'altri'
                   ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <LayoutGrid className="w-3.5 h-3.5 text-gray-500" />
               <span>Altri immobili</span>
