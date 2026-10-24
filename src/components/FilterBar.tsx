@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, Store, Warehouse, LayoutGrid, X } from 'lucide-react';
+import { ChevronDown, Store, Warehouse, LayoutGrid } from 'lucide-react';
 import type { PropertyCategory } from '../types/property';
 
 interface FilterBarProps {
@@ -12,8 +12,6 @@ interface FilterBarProps {
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
-  searchQuery,
-  onSearchChange,
   selectedCategory,
   onCategoryChange,
   totalCount,
@@ -125,8 +123,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               onClick={() => onCategoryChange(selectedCategory === 'negozi' ? 'all' : 'negozi')}
               className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${selectedCategory === 'negozi'
-                  ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
-                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                 }`}
             >
               <Store className="w-3.5 h-3.5 text-gray-500" />
@@ -137,8 +135,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               onClick={() => onCategoryChange(selectedCategory === 'capannoni' ? 'all' : 'capannoni')}
               className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${selectedCategory === 'capannoni'
-                  ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
-                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                 }`}
             >
               <Warehouse className="w-3.5 h-3.5 text-gray-500" />
@@ -149,8 +147,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               onClick={() => onCategoryChange(selectedCategory === 'altri' ? 'all' : 'altri')}
               className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs rounded-lg border flex items-center space-x-1.5 transition-all flex-shrink-0 ${selectedCategory === 'altri'
-                  ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
-                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'bg-[#0d6e5a]/10 border-[#0d6e5a] text-[#0d6e5a] font-medium'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                 }`}
             >
               <LayoutGrid className="w-3.5 h-3.5 text-gray-500" />
