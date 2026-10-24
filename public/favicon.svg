@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="8" fill="#0F172A"/>
+  <path d="M16 4C10.477 4 6 8.477 6 14C6 20.25 14.5 27.5 15.35 28.22C15.73 28.54 16.27 28.54 16.65 28.22C17.5 27.5 26 20.25 26 14C26 8.477 21.523 4 16 4ZM16 18C13.791 18 12 16.209 12 14C12 11.791 13.791 10 16 10C18.209 10 20 11.791 20 14C20 16.209 18.209 18 16 18Z" fill="url(#domina-grad)"/>
+  <circle cx="16" cy="14" r="2.5" fill="#38BDF8"/>
+  <defs>
+    <linearGradient id="domina-grad" x1="6" y1="4" x2="26" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+</svg>

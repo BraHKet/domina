@@ -1,0 +1,403 @@
+[
+  {
+    "id": "domina-immobile-001",
+    "name": "Ex negozio in via Roma",
+    "code": "PD-COM-001",
+    "address": "Via Roma, 120 - 35131 Padova (PD)",
+    "district": "Centro Storico",
+    "city": "Padova",
+    "coordinates": [45.4045, 11.8762],
+    "category": "negozi",
+    "categoryLabel": "Negozio / Locale commerciale",
+    "status": "Dismesso",
+    "activityStatus": "dismesso",
+    "isVisibleToUser": true,
+    "condition": "Da ristrutturare",
+    "statusBadgeColor": "amber",
+    "coveredAreaSqm": 180,
+    "lotAreaSqm": 220,
+    "externalAreaSqm": null,
+    "clearHeightMeters": 3.8,
+    "image": "/images/immobile-001.jpg",
+    "description": "Locale commerciale situato in una zona di forte passaggio pedonale, a pochi minuti dal centro storico. L'immobile è attualmente dismesso e necessita di interventi di riqualificazione.",
+    "context": "L'area è caratterizzata da una buona presenza di servizi, attività commerciali e collegamenti con i mezzi pubblici. La vicinanza al centro storico rende l'immobile interessante per diverse tipologie di intervento.",
+    "opportunityNotes": "Posizione di massimo prestigio commerciale nel cuore di Padova. Ideale per boutique, show-room o studio professionale.",
+    "surroundingContext": "L'area è caratterizzata da una buona presenza di servizi, attività commerciali e collegamenti con i mezzi pubblici. La vicinanza al centro storico rende l'immobile interessante per diverse tipologie di intervento.",
+    "accessibilityNotes": "A pochi passi dalle fermate del tram e bus urbani. Zona a traffico limitato con ottimo flusso pedonale.",
+    "businessHealth": {
+      "revenueTrend": [
+        { "year": "2023", "revenue": 340000, "margin": 18 },
+        { "year": "2024", "revenue": 290000, "margin": 12 },
+        { "year": "2025", "revenue": 140000, "margin": -4 }
+      ],
+      "footTrafficScore": 86,
+      "monthlyFootfall": 48000,
+      "peakHours": "11:30 - 13:00 / 17:30 - 19:30",
+      "creditRating": "Rating B+ (In transizione)",
+      "averageTicket": "€ 74,50",
+      "notes": "Attività cessata a inizio anno per trasferimento titolare. Location con altissimo potenziale di riavvio immediato."
+    },
+    "targetProposals": [
+      {
+        "targetCategory": "Catene Retail & Abbigliamento Premium",
+        "brands": ["Boutique multibrand", "Accessori & Pelletteria", "Ottica di design"],
+        "matchScore": 95,
+        "reason": "3 vetrine ad angolo su Via Roma, canone sostenibile di mercato, flusso pedonale continuativo.",
+        "estimatedReturn": "Canone stimato: € 3.800 - 4.500 / mese (Yield 6.8%)"
+      },
+      {
+        "targetCategory": "Servizi Finanziari & Studi Professionali",
+        "brands": ["Family Office", "Agenzia Assicurativa Private", "Centro Consulenza"],
+        "matchScore": 84,
+        "reason": "Fronte strada prestigioso per accoglienza clientela alta gamma a due passi dalle piazze.",
+        "estimatedReturn": "Canone stimato: € 3.500 / mese (Yield 6.2%)"
+      }
+    ],
+    "urbanPlanning": {
+      "patClassification": "Ambiti Urbani Consolidati - Nucleo Storico",
+      "piZoning": "Zona A - Centro Storico (Sottozona A1)",
+      "allowedUses": [
+        "Commerciale al dettaglio (esercizi di vicinato)",
+        "Direzionale e servizi professionali",
+        "Somministrazione alimenti e bevande"
+      ],
+      "verifiedStatus": "Verifica preliminare effettuata",
+      "heritageConstraints": "Vincolo paesaggistico centro storico ai sensi del D.Lgs. 42/2004.",
+      "bufferZones": "Regolamento ZTL e orari carico/scarico merci.",
+      "environmentalNotes": "Nessuna criticità ambientale rilevata nel fabbricato.",
+      "criticalIssues": [
+        "Opere interne soggette a parere della Soprintendenza",
+        "Verifica canna fumaria per eventuale cambio d'uso food"
+      ],
+      "strengths": [
+        "Posizione centrale ad altissimo flusso pedonale",
+        "Tre ampie vetrine su strada principale",
+        "Flessibilità di layout interno open-space"
+      ],
+      "sources": "Elaborazione Domina su Piano degli Interventi Comune di Padova.",
+      "elaborationDate": "Ottobre 2026"
+    },
+    "pdfPath": "/dossiers/domina-dossier-immobile-001.pdf",
+    "pdfFileName": "domina-dossier-immobile-001.pdf",
+    "pdfSize": "1.8 MB",
+    "isDemonstrative": true
+  },
+  {
+    "id": "domina-immobile-002",
+    "name": "Polo Commerciale Attivo Corso Stati Uniti",
+    "code": "PD-IND-002",
+    "address": "Corso Stati Uniti, 42 - 35127 Padova (PD)",
+    "district": "Zona Industriale (ZIP)",
+    "city": "Padova",
+    "coordinates": [45.3882, 11.942],
+    "category": "capannoni",
+    "categoryLabel": "Capannone industriale",
+    "status": "Attivo",
+    "activityStatus": "attivo",
+    "isVisibleToUser": true,
+    "condition": "In esercizio",
+    "statusBadgeColor": "emerald",
+    "coveredAreaSqm": 4250,
+    "lotAreaSqm": 9800,
+    "externalAreaSqm": 5550,
+    "clearHeightMeters": 8.5,
+    "image": "/images/immobile-002.jpg",
+    "description": "Fabbricato industriale operativo con capannone di 3.650 mq e palazzina direzionale, attualmente condotto da primaria azienda logistica con contratto in scadenza nei prossimi 8 mesi.",
+    "context": "Polo produttivo e logistico di primaria rilevanza nel Triveneto, a meno di 2 km dal casello autostradale A4 Padova Est e dall'Interporto.",
+    "opportunityNotes": "Opportunità sia di acquisizione a reddito che di cessione d'azienda / subentro contrattuale con ottimi flussi finanziari.",
+    "surroundingContext": "Contesto puramente produttivo e logistico con collegamenti intermodali e dogana.",
+    "accessibilityNotes": "Accesso immediato a Corso Stati Uniti e alla Tangenziale Est. Casello A4 a 1,8 km.",
+    "businessHealth": {
+      "revenueTrend": [
+        { "year": "2023", "revenue": 1820000, "margin": 22 },
+        { "year": "2024", "revenue": 2150000, "margin": 24 },
+        { "year": "2025", "revenue": 2480000, "margin": 26 }
+      ],
+      "footTrafficScore": 72,
+      "monthlyFootfall": 12500,
+      "peakHours": "07:00 - 09:30 / 16:00 - 18:30 (Flussi logistici)",
+      "creditRating": "Rating AAA (Massima Solvibilità)",
+      "averageTicket": "€ 1.450 (B2B)",
+      "notes": "Azienda solida, pagamenti regolari, portafoglio clienti consolidato. Incremento costante dei volumi."
+    },
+    "targetProposals": [
+      {
+        "targetCategory": "Operatori Logistica Last-Mile & E-commerce",
+        "brands": ["Hub Logistico Regionale", "Corriere Espresso", "Distribuzione Ricambi Automotive"],
+        "matchScore": 98,
+        "reason": "Altezza 8.5m, 3 baie idrauliche, 5.550 mq di piazzale recintato, casello A4 a 1.8km.",
+        "estimatedReturn": "Canone stimato: € 19.500 - 22.000 / mese (Yield 7.4%)"
+      },
+      {
+        "targetCategory": "Fondi Immobiliari Value-Add",
+        "brands": ["Fondo Immobiliare Logistica", "Sviluppo Industriale Triveneto"],
+        "matchScore": 91,
+        "reason": "Immobile già a reddito con possibilità di rinnovo o rinegoziazione a canoni attuali di mercato.",
+        "estimatedReturn": "Cessione stimata compendio: € 3.200.000 (Cap Rate 7.1%)"
+      }
+    ],
+    "urbanPlanning": {
+      "patClassification": "Ambiti Produttivi e Direzionali Consolidati",
+      "piZoning": "Zona D1 - Insediamenti Produttivi e Logistici ZIP",
+      "allowedUses": [
+        "Industria e artigianato produttivo",
+        "Logistica, deposito merci e autotrasporto",
+        "Uffici direzionali annessi"
+      ],
+      "verifiedStatus": "Verifica preliminare effettuata",
+      "heritageConstraints": "Nessun vincolo storico-architettonico.",
+      "bufferZones": "Fascia di rispetto viabilità primaria già osservata.",
+      "environmentalNotes": "Bonifica cisterne effettuata con certificazione di conformità.",
+      "criticalIssues": [
+        "Ricollaudo cabina elettrica MT/BT",
+        "Adeguamento anello antincendio e CPI"
+      ],
+      "strengths": [
+        "Altezza utile 8,50 m sotto trave",
+        "3 baie di carico con banchina idraulica",
+        "Piazzale di manovra da 5.550 m²"
+      ],
+      "sources": "Elaborazione Domina su Piano Regolatore ZIP Padova.",
+      "elaborationDate": "Ottobre 2026"
+    },
+    "pdfPath": "/dossiers/domina-dossier-immobile-002.pdf",
+    "pdfFileName": "domina-dossier-immobile-002.pdf",
+    "pdfSize": "2.2 MB",
+    "isDemonstrative": true
+  },
+  {
+    "id": "domina-immobile-003",
+    "name": "Supermercato di Vicinato Arcella",
+    "code": "PD-COM-003",
+    "address": "Via Leonardo Da Vinci, 14 - 35132 Padova (PD)",
+    "district": "Arcella - San Carlo",
+    "city": "Padova",
+    "coordinates": [45.4261, 11.8864],
+    "category": "negozi",
+    "categoryLabel": "Negozio / Locale commerciale",
+    "status": "Attivo",
+    "activityStatus": "attivo",
+    "isVisibleToUser": true,
+    "condition": "Attività in esercizio",
+    "statusBadgeColor": "emerald",
+    "coveredAreaSqm": 1150,
+    "lotAreaSqm": 2400,
+    "externalAreaSqm": 1250,
+    "clearHeightMeters": 4.2,
+    "image": "/images/immobile-003.jpg",
+    "description": "Media struttura di vendita alimentare attualmente aperta con 38 posti auto privati. Il gestore cerca acquirente o subentrante per cambio gestione pensionamento.",
+    "context": "Quartiere semicentrale ad altissima densità residenziale, con forte passaggio e presenza di scuole e uffici.",
+    "opportunityNotes": "Cessione ramo d'azienda con avviamento trentennale o riposizionamento in discount / centro medico.",
+    "surroundingContext": "Tessuto residenziale compatto con oltre 25.000 residenti nel bacino pedonale dei 10 minuti.",
+    "accessibilityNotes": "A 120 metri dalla fermata SIR1 San Carlo del Tram di Padova.",
+    "businessHealth": {
+      "revenueTrend": [
+        { "year": "2023", "revenue": 950000, "margin": 14 },
+        { "year": "2024", "revenue": 990000, "margin": 15 },
+        { "year": "2025", "revenue": 1040000, "margin": 16 }
+      ],
+      "footTrafficScore": 91,
+      "monthlyFootfall": 32000,
+      "peakHours": "09:00 - 12:30 / 17:00 - 19:30",
+      "creditRating": "Rating A (Solido)",
+      "averageTicket": "€ 28,40",
+      "notes": "Clientela fidelizzata di quartiere, incassi costanti, assenza di debiti previdenziali o bancari."
+    },
+    "targetProposals": [
+      {
+        "targetCategory": "Catene GDO & Discount Prossimità",
+        "brands": ["In's Mercato", "Crai", "Conad City", "Tigre"],
+        "matchScore": 97,
+        "reason": "Parcheggio dedicato 38 stalli, bacino pedonale compatto, autorizzazione media struttura M1 attiva.",
+        "estimatedReturn": "Canone stimato: € 9.000 - 11.500 / mese (Yield 7.5%)"
+      },
+      {
+        "targetCategory": "Poliambulatori & Centri Fisioterapici",
+        "brands": ["Centro Medico Santagostino", "Gruppo San Donato", "Clinica Odontoiatrica"],
+        "matchScore": 89,
+        "reason": "Accesso privo di barriere architettoniche, parcheggio privato per pazienti e medici.",
+        "estimatedReturn": "Canone stimato: € 10.000 / mese"
+      }
+    ],
+    "urbanPlanning": {
+      "patClassification": "Ambiti Urbani Consolidati Misti",
+      "piZoning": "Zona B2 - Residenziale mista a commerciale",
+      "allowedUses": [
+        "Commercio al dettaglio fino a 1.500 m²",
+        "Servizi sanitari e studi medici associati",
+        "Fitness e attività motorie"
+      ],
+      "verifiedStatus": "Verifica preliminare effettuata",
+      "heritageConstraints": "Nessun vincolo architettonico diretto.",
+      "bufferZones": "Rispetto distanze dai confini rispettato.",
+      "environmentalNotes": "Nessuna criticità ambientale rilevata.",
+      "criticalIssues": [
+        "Aggiornamento impiantistica termoidraulica",
+        "Riorganizzazione viabilità interna parcheggio"
+      ],
+      "strengths": [
+        "Parcheggio esclusivo con 38 posti auto",
+        "Bacino d'utenza residenziale ad alta densità",
+        "Scarico merci separato con rampa camion"
+      ],
+      "sources": "Elaborazione Domina su Piano degli Interventi Padova.",
+      "elaborationDate": "Ottobre 2026"
+    },
+    "pdfPath": "/dossiers/domina-dossier-immobile-003.pdf",
+    "pdfFileName": "domina-dossier-immobile-003.pdf",
+    "pdfSize": "1.9 MB",
+    "isDemonstrative": true
+  },
+  {
+    "id": "domina-immobile-004",
+    "name": "Ex laboratorio artigiano San Marco",
+    "code": "PD-ALT-004",
+    "address": "Via San Marco, 112 - 35129 Padova (PD)",
+    "district": "Ponte di Brenta",
+    "city": "Padova",
+    "coordinates": [45.4172, 11.9395],
+    "category": "altri",
+    "categoryLabel": "Altri immobili dismessi",
+    "status": "Dismesso",
+    "activityStatus": "dismesso",
+    "isVisibleToUser": false,
+    "condition": "Da ristrutturare",
+    "statusBadgeColor": "rose",
+    "coveredAreaSqm": 1820,
+    "lotAreaSqm": 3600,
+    "externalAreaSqm": 1780,
+    "clearHeightMeters": 5.5,
+    "image": "/images/immobile-004.jpg",
+    "description": "Opificio artigianale e laboratorio storico con murature a vista e lucernari a shed. Ampia area cortiliva su 4 lati con accesso carraio indipendente.",
+    "context": "Zona di cerniera tra l'asse storico residenziale di Ponte di Brenta e l'asse commerciale verso la Riviera del Brenta.",
+    "opportunityNotes": "Immobile dal forte fascino industriale, ideale per recupero conservativo: coworking, laboratorio tecnologico o birrificio artigianale.",
+    "surroundingContext": "Contesto misto artigianale-residenziale con buona dotazione di servizi.",
+    "accessibilityNotes": "A 400 metri dalla stazione FS di Ponte di Brenta e a 70 metri da fermata bus urbani.",
+    "businessHealth": {
+      "revenueTrend": [
+        { "year": "2023", "revenue": 110000, "margin": 8 },
+        { "year": "2024", "revenue": 65000, "margin": -5 },
+        { "year": "2025", "revenue": 0, "margin": 0 }
+      ],
+      "footTrafficScore": 54,
+      "monthlyFootfall": 9800,
+      "peakHours": "Non rilevabili (fabbricato dismesso)",
+      "creditRating": "Inattivo",
+      "averageTicket": "N/D",
+      "notes": "Immobile dismesso da 18 mesi. Struttura sana ma impianti da rifare interamente."
+    },
+    "targetProposals": [
+      {
+        "targetCategory": "Sviluppo Coworking Creativo & Hub Tecnologico",
+        "brands": ["Spazio Coworking", "Hub Design & Architettura", "FabLab"],
+        "matchScore": 92,
+        "reason": "Estetica archeologia industriale con shed luminosi e corte verde recintata.",
+        "estimatedReturn": "Rendita post-ristrutturazione: € 14.000 / mese (Yield 8.2%)"
+      }
+    ],
+    "urbanPlanning": {
+      "patClassification": "Ambiti di Rigenerazione Urbana",
+      "piZoning": "Zona C2 - Recupero urbanistico patrimonio edilizio",
+      "allowedUses": [
+        "Attività terziarie e di servizio avanzato",
+        "Artigianato non inquinante",
+        "Ristorazione e spazi espositivi"
+      ],
+      "verifiedStatus": "Dato da verificare in sede tecnica",
+      "heritageConstraints": "Interesse documentale per architettura proto-industriale.",
+      "bufferZones": "Fascia di rispetto viaria ex SS11.",
+      "environmentalNotes": "Indagine preliminare del sottosuolo consigliata.",
+      "criticalIssues": [
+        "Necessità di PUA per ampliamenti o cambi d'uso integrali",
+        "Rifacimento coperture e serramenti"
+      ],
+      "strengths": [
+        "Fascino architettonico vintage e volumetria modulare",
+        "Corte privata recintata su 4 lati",
+        "Ottima connessione verso Venezia e centro Padova"
+      ],
+      "sources": "Elaborazione Domina su Piano di Recupero Urbano Padova.",
+      "elaborationDate": "Ottobre 2026"
+    },
+    "pdfPath": "/dossiers/domina-dossier-immobile-004.pdf",
+    "pdfFileName": "domina-dossier-immobile-004.pdf",
+    "pdfSize": "2.0 MB",
+    "isDemonstrative": true
+  },
+  {
+    "id": "domina-immobile-005",
+    "name": "Ex deposito merci Chiesanuova",
+    "code": "PD-IND-005",
+    "address": "Via Pelosa, 78 - 35136 Padova (PD)",
+    "district": "Chiesanuova - Montà",
+    "city": "Padova",
+    "coordinates": [45.4185, 11.8385],
+    "category": "capannoni",
+    "categoryLabel": "Capannone industriale",
+    "status": "Dismesso",
+    "activityStatus": "dismesso",
+    "isVisibleToUser": false,
+    "condition": "Discreto",
+    "statusBadgeColor": "blue",
+    "coveredAreaSqm": 2600,
+    "lotAreaSqm": 6200,
+    "externalAreaSqm": 3600,
+    "clearHeightMeters": 7.2,
+    "image": "/images/immobile-005.jpg",
+    "description": "Fabbricato per stoccaggio e logistica merci con capannone in carpenteria pesante, 4 portoni scorrevoli d'accesso e tettoia coperta di carico.",
+    "context": "Quadrante ovest della città, a ridosso dell'uscita 4 della Tangenziale Ovest di Padova.",
+    "opportunityNotes": "Posizione strategica per deposito merci, noleggio mezzi, stoccaggio edile o centro riparazioni.",
+    "surroundingContext": "Area produttiva periferica con facilità di manovra e viabilità scorrevole per mezzi pesanti.",
+    "accessibilityNotes": "A 800 metri dallo svincolo Tangenziale Ovest. Direttrice comoda verso Vicenza e Bassano.",
+    "businessHealth": {
+      "revenueTrend": [
+        { "year": "2023", "revenue": 380000, "margin": 10 },
+        { "year": "2024", "revenue": 210000, "margin": 4 },
+        { "year": "2025", "revenue": 0, "margin": 0 }
+      ],
+      "footTrafficScore": 48,
+      "monthlyFootfall": 7200,
+      "peakHours": "Non rilevabili",
+      "creditRating": "Dismesso",
+      "averageTicket": "N/D",
+      "notes": "Ex magazzino edile dismesso da 10 mesi. Carroponte 6,3t presente e funzionante."
+    },
+    "targetProposals": [
+      {
+        "targetCategory": "Stoccaggio Edile & Noleggio Mezzi da Lavoro",
+        "brands": ["Noleggio Macchine Movimento Terra", "Piattaforme Aeree", "Magazzino Materiali Costruzione"],
+        "matchScore": 94,
+        "reason": "3.600 mq di piazzale recintato, uscite tangenziale ovest immediate, portata carichi pesanti.",
+        "estimatedReturn": "Canone stimato: € 11.000 / mese (Yield 7.2%)"
+      }
+    ],
+    "urbanPlanning": {
+      "patClassification": "Ambiti Produttivi Periurbani",
+      "piZoning": "Zona D2 - Insediamenti Produttivi e di Stoccaggio",
+      "allowedUses": [
+        "Stoccaggio merci e logistica",
+        "Commercio all'ingrosso",
+        "Attività artigianali e di manutenzione veicoli"
+      ],
+      "verifiedStatus": "Verifica preliminare effettuata",
+      "heritageConstraints": "Nessun vincolo paesaggistico o storico.",
+      "bufferZones": "Rispetto infrastrutturale verificato.",
+      "environmentalNotes": "Esame visivo conforme, assenza di cisterne interrate attive.",
+      "criticalIssues": [
+        "Aggiornamento allacciamento elettrico",
+        "Verifica presidi antincendio"
+      ],
+      "strengths": [
+        "Totale accessibilità per autoarticolati senza limitazioni",
+        "3.600 m² di piazzale recintato con doppio cancello carraio",
+        "Presenza di carroponte interno"
+      ],
+      "sources": "Elaborazione Domina su SIT Padova Ovest.",
+      "elaborationDate": "Ottobre 2026"
+    },
+    "pdfPath": "/dossiers/domina-dossier-immobile-005.pdf",
+    "pdfFileName": "domina-dossier-immobile-005.pdf",
+    "pdfSize": "2.1 MB",
+    "isDemonstrative": true
+  }
+]

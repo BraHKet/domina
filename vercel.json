@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/dossiers/(.*)", "destination": "/dossiers/$1" },
+    { "source": "/images/(.*)", "destination": "/images/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
