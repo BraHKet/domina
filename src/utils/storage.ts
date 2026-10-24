@@ -1,6 +1,7 @@
 import rawProperties from '../data/properties.json';
 import type { Property, LeadSubmission, ClickEvent, ClickStats, ClickSource } from '../types/property';
 import { syncClickToGoogleSheet, syncLeadToGoogleSheet } from './googleSheets';
+import { getDeviceInfo, getTrafficSource, getTimeOnSite, getSessionMetadata } from './sessionTracker';
 
 const PROPERTIES_STORAGE_KEY = 'domina_properties_v3';
 const LEADS_STORAGE_KEY = 'domina_leads_v3';
@@ -87,6 +88,9 @@ export function recordClick(
       minute: '2-digit',
       second: '2-digit',
     }),
+    device: getDeviceInfo(),
+    referrer: getTrafficSource(),
+    timeOnSite: getTimeOnSite(),
   };
   clicks.unshift(newClick);
   try {
@@ -94,10 +98,15 @@ export function recordClick(
   } catch (e) {
     console.error('Error recording click:', e);
   }
-  // Sync to Google Sheets cloud database
-  syncClickToGoogleSheet(newClick).catch((err) =>
-    console.error('Cloud click sync error:', err)
-  );
+
+  // Retrieve Geo-IP city and sync to Google Sheets
+  getSessionMetadata().then((meta) => {
+    newClick.userCity = meta.userCity;
+    syncClickToGoogleSheet(newClick).catch((err) =>
+      console.error('Cloud click sync error:', err)
+    );
+  });
+
   return newClick;
 }
 
@@ -176,6 +185,9 @@ export function saveLead(
     propertyName,
     hiddenCount,
     city,
+    device: getDeviceInfo(),
+    referrer: getTrafficSource(),
+    timeOnSite: getTimeOnSite(),
   };
   leads.unshift(newLead);
   try {
@@ -183,10 +195,15 @@ export function saveLead(
   } catch (e) {
     console.error('Error saving lead:', e);
   }
-  // Sync to Google Sheets cloud database
-  syncLeadToGoogleSheet(newLead).catch((err) =>
-    console.error('Cloud lead sync error:', err)
-  );
+
+  // Retrieve Geo-IP city and sync to Google Sheets
+  getSessionMetadata().then((meta) => {
+    newLead.userCity = meta.userCity;
+    syncLeadToGoogleSheet(newLead).catch((err) =>
+      console.error('Cloud lead sync error:', err)
+    );
+  });
+
   return newLead;
 }
 

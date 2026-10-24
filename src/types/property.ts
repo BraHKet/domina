@@ -88,6 +88,10 @@ export interface ClickEvent {
   propertyName?: string;
   propertyAddress?: string;
   timestamp: string;
+  userCity?: string;
+  device?: string;
+  referrer?: string;
+  timeOnSite?: string;
 }
 
 export interface ClickStats {
@@ -104,5 +108,9 @@ export interface LeadSubmission {
   propertyName?: string;
   hiddenCount?: number;
   city: string;
+  userCity?: string;
+  device?: string;
+  referrer?: string;
+  timeOnSite?: string;
 }
 

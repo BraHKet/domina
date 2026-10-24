@@ -19,6 +19,10 @@ import {
   Copy,
   Send,
   RefreshCw,
+  MapPin,
+  Smartphone,
+  Clock,
+  Compass,
 } from 'lucide-react';
 import type { LeadSubmission, ClickEvent, ClickStats } from '../types/property';
 import { deleteStoredLead, clearStoredClicks, getStoredClicks, getClickStats } from '../utils/storage';
@@ -132,13 +136,16 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
 
   const handleExportCSV = () => {
     if (leads.length === 0) return;
-    const headers = 'ID,Email,Data e Ora,Pulsante Cliccato,Immobile / Contesto,Citta\n';
+    const headers =
+      'ID,Email,Data e Ora,Pulsante Cliccato,Immobile / Contesto,Citta Immobile,Citta Utente (Geo-IP),Dispositivo,Provenienza,Tempo sul Sito\n';
     const rows = leads
       .map(
         (l) =>
           `"${l.id}","${l.email}","${l.timestamp}","${l.sourceLabel || l.source}","${
             l.propertyName || (l.hiddenCount ? `${l.hiddenCount} immobili riservati` : '')
-          }","${l.city}"`
+          }","${l.city}","${l.userCity || 'Sconosciuta'}","${l.device || 'Desktop'}","${
+            l.referrer || 'Accesso Diretto'
+          }","${l.timeOnSite || '0 sec'}"`
       )
       .join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
@@ -449,9 +456,11 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
                             </span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-[11px] text-gray-500 mt-1">
-                            <Calendar className="w-3 h-3 text-gray-400" />
-                            <span>{lead.timestamp}</span>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-500 mt-1">
+                            <span className="flex items-center space-x-1">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              <span>{lead.timestamp}</span>
+                            </span>
                             <span>•</span>
                             <span className="text-gray-700 font-medium">
                               {lead.propertyName ||
@@ -459,6 +468,34 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
                                   ? `${lead.hiddenCount} immobili riservati`
                                   : 'Padova')}
                             </span>
+                          </div>
+
+                          {/* Extra Session Metadata Row: Geo, Device, Traffic, Time */}
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1.5 text-[10px]">
+                            {lead.userCity && (
+                              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200/60 font-medium flex items-center space-x-1">
+                                <MapPin className="w-2.5 h-2.5 text-blue-600" />
+                                <span>{lead.userCity}</span>
+                              </span>
+                            )}
+                            {lead.device && (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium flex items-center space-x-1">
+                                <Smartphone className="w-2.5 h-2.5 text-slate-500" />
+                                <span>{lead.device}</span>
+                              </span>
+                            )}
+                            {lead.timeOnSite && (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/60 font-medium flex items-center space-x-1">
+                                <Clock className="w-2.5 h-2.5 text-amber-600" />
+                                <span>Sul sito: {lead.timeOnSite}</span>
+                              </span>
+                            )}
+                            {lead.referrer && (
+                              <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200/60 font-medium flex items-center space-x-1">
+                                <Compass className="w-2.5 h-2.5 text-purple-600" />
+                                <span>{lead.referrer}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -492,21 +529,31 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
                   return (
                     <div
                       key={c.id}
-                      className="p-2.5 rounded-xl border border-gray-100 bg-[#fbfcfd] hover:bg-white hover:border-gray-200 flex items-center justify-between text-xs transition-colors"
+                      className="p-2.5 rounded-xl border border-gray-100 bg-[#fbfcfd] hover:bg-white hover:border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2 transition-colors"
                     >
-                      <div className="flex items-center space-x-2.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2.5">
                         <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center space-x-1 ${badge.badgeClass}`}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center space-x-1 w-fit ${badge.badgeClass}`}
                         >
                           {badge.icon}
                           <span>{badge.label}</span>
                         </span>
-                        <span className="text-gray-700 font-semibold truncate max-w-[280px]">
+                        <span className="text-gray-800 font-semibold truncate max-w-[260px]">
                           {c.propertyName || c.propertyAddress || 'Opportunità riservate'}
                         </span>
+                        {c.userCity && (
+                          <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/50 w-fit">
+                            📍 {c.userCity}
+                          </span>
+                        )}
+                        {c.timeOnSite && (
+                          <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200/50 w-fit">
+                            ⏱️ {c.timeOnSite}
+                          </span>
+                        )}
                       </div>
 
-                      <div className="flex items-center space-x-1.5 text-[11px] text-gray-400 flex-shrink-0">
+                      <div className="flex items-center space-x-1.5 text-[11px] text-gray-400 flex-shrink-0 self-end sm:self-auto">
                         <Calendar className="w-3 h-3 text-gray-300" />
                         <span>{c.timestamp}</span>
                       </div>

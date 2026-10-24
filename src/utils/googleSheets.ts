@@ -47,6 +47,10 @@ export async function syncLeadToGoogleSheet(lead: LeadSubmission): Promise<boole
     propertyName: lead.propertyName || (lead.hiddenCount ? `${lead.hiddenCount} immobili riservati` : 'Padova'),
     city: lead.city || 'Padova',
     timestamp: lead.timestamp,
+    userCity: lead.userCity || 'Sconosciuta',
+    device: lead.device || 'Desktop',
+    referrer: lead.referrer || 'Accesso Diretto',
+    timeOnSite: lead.timeOnSite || '0 sec',
   };
 
   try {
@@ -83,6 +87,10 @@ export async function syncClickToGoogleSheet(click: ClickEvent): Promise<boolean
     propertyName: click.propertyName || click.propertyAddress || 'Opportunità riservate',
     city: 'Padova',
     timestamp: click.timestamp,
+    userCity: click.userCity || 'Sconosciuta',
+    device: click.device || 'Desktop',
+    referrer: click.referrer || 'Accesso Diretto',
+    timeOnSite: click.timeOnSite || '0 sec',
   };
 
   try {
@@ -122,13 +130,13 @@ export async function fetchRemoteGoogleSheetData(): Promise<{ leads: LeadSubmiss
 }
 
 export const APPS_SCRIPT_TEMPLATE = `// -------------------------------------------------------------
-// DOMINA — Google Apps Script per raccolta Clic & Lead in tempo reale
+// DOMINA — Google Apps Script con Tracciamento Avanzato (10 Colonne)
 // -------------------------------------------------------------
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
-    // Crea intestazioni se il foglio è vuoto
+    // Crea o aggiorna intestazioni se il foglio è vuoto o ha meno colonne
     if (sheet.getLastRow() === 0) {
       sheet.appendRow([
         "Data e Ora",
@@ -136,10 +144,13 @@ function doPost(e) {
         "Email Utente",
         "Pulsante Cliccato",
         "Immobile / Contesto",
-        "Città"
+        "Città Immobile",
+        "Città Utente (Geo-IP)",
+        "Dispositivo",
+        "Provenienza (Traffic Source)",
+        "Tempo sul Sito prima del Clic"
       ]);
-      // Stile intestazioni
-      var headerRange = sheet.getRange(1, 1, 1, 6);
+      var headerRange = sheet.getRange(1, 1, 1, 10);
       headerRange.setBackground("#0d6e5a");
       headerRange.setFontColor("#ffffff");
       headerRange.setFontWeight("bold");
@@ -153,7 +164,11 @@ function doPost(e) {
       data.email || "-",
       data.sourceLabel || data.source || "-",
       data.propertyName || "-",
-      data.city || "Padova"
+      data.city || "Padova",
+      data.userCity || "Sconosciuta",
+      data.device || "Desktop",
+      data.referrer || "Accesso Diretto",
+      data.timeOnSite || "0 sec"
     ]);
 
     return ContentService
