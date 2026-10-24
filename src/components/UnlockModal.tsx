@@ -93,7 +93,7 @@ export const UnlockModal: React.FC<UnlockModalProps> = ({
                   placeholder="Inserisci la tua mail..."
                   required
                   autoFocus
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#0d6e5a] focus:ring-1 focus:ring-[#0d6e5a]/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm sm:text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#0d6e5a] focus:ring-1 focus:ring-[#0d6e5a]/20"
                 />
                 {error && <p className="text-[11px] text-red-600 mt-1">{error}</p>}
               </div>

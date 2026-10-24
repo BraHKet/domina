@@ -21,10 +21,10 @@ export const Header: React.FC<HeaderProps> = ({
   onTriggerHiddenLogin,
 }) => {
   return (
-    <header className="z-30 flex-none bg-[#141f28] text-white px-6 py-3 border-b border-[#22303e] shadow-sm">
-      <div className="flex items-center justify-between gap-4">
+    <header className="z-30 flex-none bg-[#141f28] text-white px-3 sm:px-6 py-2.5 sm:py-3 border-b border-[#22303e] shadow-sm">
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
         {/* Left Side: Brand Logo & Name */}
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-3 sm:space-x-6">
           <div
             className="flex items-center space-x-2.5 cursor-pointer select-none"
             onDoubleClick={onTriggerHiddenLogin}
@@ -66,27 +66,29 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Side: ONLY visible when logged in as ADMIN */}
         {isAdmin && (
-          <div className="flex items-center space-x-2 text-xs animate-fade-in">
-            <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold flex items-center space-x-1">
+          <div className="flex items-center space-x-1 sm:space-x-2 text-xs flex-wrap sm:flex-nowrap gap-1 animate-fade-in">
+            <span className="px-2 sm:px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold flex items-center space-x-1">
               <Shield className="w-3 h-3" />
               <span>ADMIN</span>
             </span>
 
             <button
               onClick={onAddNewLocation}
-              className="px-3 py-1.5 rounded-lg bg-[#0d6e5a] hover:bg-[#095747] text-white font-semibold flex items-center space-x-1 shadow-sm transition-colors"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#0d6e5a] hover:bg-[#095747] text-white font-semibold flex items-center space-x-1 shadow-sm transition-colors text-xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Nuova location</span>
+              <span className="hidden sm:inline">Nuova location</span>
+              <span className="sm:hidden">Nuova</span>
             </button>
 
             <button
               onClick={onOpenLeads}
-              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold flex items-center space-x-1.5 transition-colors"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold flex items-center space-x-1 sm:space-x-1.5 transition-colors text-xs"
               title="Monitoraggio clic e contatti acquisiti"
             >
               <BarChart3 className="w-3.5 h-3.5" />
-              <span>Clic & Lead ({leadsCount})</span>
+              <span className="hidden sm:inline">Clic & Lead ({leadsCount})</span>
+              <span className="sm:hidden">Lead ({leadsCount})</span>
             </button>
 
             <button
@@ -99,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={onLogoutAdmin}
-              className="px-2.5 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 font-medium flex items-center space-x-1 transition-colors"
+              className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 font-medium flex items-center space-x-1 transition-colors text-xs"
               title="Esci dall'Admin"
             >
               <LogOut className="w-3.5 h-3.5" />

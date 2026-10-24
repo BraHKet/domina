@@ -45,7 +45,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
   return (
     <div
-      className="absolute top-4 right-6 bottom-6 w-[430px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-200/80 z-20 flex flex-col overflow-hidden text-gray-800 transition-all animate-fade-in"
+      className="absolute top-4 right-4 sm:right-6 bottom-4 sm:bottom-6 w-[calc(100%-2rem)] sm:w-[420px] md:w-[430px] max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-200/80 z-20 flex flex-col overflow-hidden text-gray-800 transition-all animate-fade-in"
       role="dialog"
       aria-label={`Dettagli ${property.name}`}
     >
@@ -53,7 +53,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       {viewMode === 'normal' ? (
         <>
           {/* Top Image with Close Button and Admin Quick Bar */}
-          <div className="relative h-52 w-full flex-shrink-0 bg-gray-100">
+          <div className="relative h-48 sm:h-52 w-full flex-shrink-0 bg-gray-100">
             <img
               src={property.image}
               alt={property.name}

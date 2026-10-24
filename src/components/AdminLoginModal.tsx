@@ -35,7 +35,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-gray-800 p-6">
+      <div className="relative w-full max-w-sm mx-3 sm:mx-auto bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-gray-800 p-5 sm:p-6">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -74,7 +74,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 placeholder="Inserisci nome utente"
                 required
                 autoFocus
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#0d6e5a]"
+                className="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-gray-300 text-sm sm:text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#0d6e5a]"
               />
             </div>
 
@@ -91,7 +91,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 }}
                 placeholder="••••••••"
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#0d6e5a]"
+                className="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-gray-300 text-sm sm:text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#0d6e5a]"
               />
             </div>
 

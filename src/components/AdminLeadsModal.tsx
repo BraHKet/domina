@@ -203,22 +203,23 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-gray-800 max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-gray-800 max-h-[92vh] sm:max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex-none px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0d6e5a]/10 border border-[#0d6e5a]/30 flex items-center justify-center text-[#0d6e5a]">
-              <BarChart3 className="w-5 h-5" />
+        <div className="flex-none px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0d6e5a]/10 border border-[#0d6e5a]/30 flex items-center justify-center text-[#0d6e5a] flex-shrink-0">
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="text-base font-bold text-gray-900 tracking-tight">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 tracking-tight">
                   Tracciamento Clic & Lead Raccolti
                 </h3>
                 {isSheetConfigured ? (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center space-x-1">
                     <Cloud className="w-2.5 h-2.5" />
-                    <span>Google Sheets Connesso</span>
+                    <span className="hidden sm:inline">Google Sheets Connesso</span>
+                    <span className="sm:hidden">Sheets Connesso</span>
                   </span>
                 ) : (
                   <button
@@ -230,7 +231,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
                   </button>
                 )}
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
                 Tieni traccia di chi lascia la mail e di quanti cliccano sui diversi pulsanti dell'app
               </p>
             </div>
@@ -245,8 +246,8 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
         </div>
 
         {/* Top KPI Cards (Quanti & Chi Summary) */}
-        <div className="flex-none px-6 py-3.5 bg-slate-50/70 border-b border-gray-100">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="flex-none px-4 sm:px-6 py-3 sm:py-3.5 bg-slate-50/70 border-b border-gray-100">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {/* KPI 1: Clic Totali (Quanti) */}
             <div className="p-3 bg-white rounded-xl border border-gray-200/80 shadow-2xs">
               <div className="flex items-center justify-between">
@@ -369,8 +370,8 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex-none px-6 pt-3 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex space-x-4">
+        <div className="flex-none px-3 sm:px-6 pt-3 border-b border-gray-200 flex items-center justify-between overflow-x-auto no-scrollbar">
+          <div className="flex space-x-2 sm:space-x-4 flex-shrink-0">
             <button
               onClick={() => setActiveTab('leads')}
               className={`pb-2.5 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 ${
