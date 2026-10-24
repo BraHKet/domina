@@ -1,5 +1,6 @@
 import rawProperties from '../data/properties.json';
 import type { Property, LeadSubmission, ClickEvent, ClickStats, ClickSource } from '../types/property';
+import { syncClickToGoogleSheet, syncLeadToGoogleSheet } from './googleSheets';
 
 const PROPERTIES_STORAGE_KEY = 'domina_properties_v3';
 const LEADS_STORAGE_KEY = 'domina_leads_v3';
@@ -93,6 +94,10 @@ export function recordClick(
   } catch (e) {
     console.error('Error recording click:', e);
   }
+  // Sync to Google Sheets cloud database
+  syncClickToGoogleSheet(newClick).catch((err) =>
+    console.error('Cloud click sync error:', err)
+  );
   return newClick;
 }
 
@@ -178,6 +183,10 @@ export function saveLead(
   } catch (e) {
     console.error('Error saving lead:', e);
   }
+  // Sync to Google Sheets cloud database
+  syncLeadToGoogleSheet(newLead).catch((err) =>
+    console.error('Cloud lead sync error:', err)
+  );
   return newLead;
 }
 
