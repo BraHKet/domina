@@ -1,10 +1,19 @@
 import rawProperties from '../data/properties.json';
 import type { Property, LeadSubmission, ClickEvent, ClickStats, ClickSource } from '../types/property';
-import { syncClickToGoogleSheet, syncLeadToGoogleSheet } from './googleSheets';
+import {
+  syncClickToGoogleSheet,
+  syncLeadToGoogleSheet,
+  syncPropertyToGoogleSheet,
+  deletePropertyFromGoogleSheet,
+  fetchRemoteProperties,
+  syncAllPropertiesToGoogleSheet,
+} from './googleSheets';
 import { getDeviceInfo, getTrafficSource, getTimeOnSite, getFastUserCity } from './sessionTracker';
 
-const PROPERTIES_STORAGE_KEY = 'domina_properties_v3';
-const LEADS_STORAGE_KEY = 'domina_leads_v3';
+export { fetchRemoteProperties, syncAllPropertiesToGoogleSheet };
+
+const PROPERTIES_STORAGE_KEY = 'domina_properties_v4';
+const LEADS_STORAGE_KEY = 'domina_leads_v4';
 const ADMIN_AUTH_KEY = 'domina_admin_authenticated';
 
 export function getStoredProperties(): Property[] {
@@ -27,6 +36,45 @@ export function saveStoredProperties(properties: Property[]): void {
   }
 }
 
+/**
+ * Salva o modifica un immobile/capannone:
+ * 1. Aggiorna immediatamente lo storage locale per responsività istantanea.
+ * 2. Invia la modifica al Database Cloud (Google Sheets).
+ */
+export function saveProperty(property: Property, existingProperties?: Property[]): Property[] {
+  const current = existingProperties || getStoredProperties();
+  const exists = current.some((p) => p.id === property.id);
+  const updatedList = exists
+    ? current.map((p) => (p.id === property.id ? property : p))
+    : [property, ...current];
+
+  saveStoredProperties(updatedList);
+
+  // Sync to Cloud Database (Google Sheets) in background
+  syncPropertyToGoogleSheet(property).catch((err) =>
+    console.error('Cloud property sync error:', err)
+  );
+
+  return updatedList;
+}
+
+/**
+ * Elimina un immobile/capannone sia in locale sia dal Database Cloud.
+ */
+export function deleteProperty(propertyId: string, existingProperties?: Property[]): Property[] {
+  const current = existingProperties || getStoredProperties();
+  const updatedList = current.filter((p) => p.id !== propertyId);
+
+  saveStoredProperties(updatedList);
+
+  // Delete from Cloud Database (Google Sheets) in background
+  deletePropertyFromGoogleSheet(propertyId).catch((err) =>
+    console.error('Cloud property delete error:', err)
+  );
+
+  return updatedList;
+}
+
 export function resetStoredProperties(): Property[] {
   try {
     localStorage.removeItem(PROPERTIES_STORAGE_KEY);
@@ -36,7 +84,7 @@ export function resetStoredProperties(): Property[] {
   return rawProperties as unknown as Property[];
 }
 
-const CLICKS_STORAGE_KEY = 'domina_clicks_v3';
+const CLICKS_STORAGE_KEY = 'domina_clicks_v4';
 
 export function getStoredClicks(): ClickEvent[] {
   try {
@@ -47,24 +95,7 @@ export function getStoredClicks(): ClickEvent[] {
   } catch (e) {
     console.error('Error loading clicks:', e);
   }
-  return [
-    {
-      id: 'click-1',
-      source: 'analisi_urbanistica',
-      sourceLabel: 'Vedi analisi urbanistica',
-      propertyName: 'Ex negozio in via Roma',
-      propertyAddress: 'Via Roma 42, Padova',
-      timestamp: '24/10/2026, 11:18',
-    },
-    {
-      id: 'click-2',
-      source: 'dimmi_a_chi_proporla',
-      sourceLabel: 'Dimmi a chi proporla',
-      propertyName: 'Ex capannone industriale ZIP',
-      propertyAddress: 'Corso Stati Uniti 18, Padova',
-      timestamp: '24/10/2026, 11:45',
-    },
-  ];
+  return [];
 }
 
 export function recordClick(
@@ -146,17 +177,7 @@ export function getStoredLeads(): LeadSubmission[] {
   } catch (e) {
     console.error('Error loading leads:', e);
   }
-  return [
-    {
-      id: 'lead-1',
-      email: 'investimenti@fondoveneto.it',
-      timestamp: '24/10/2026, 11:20',
-      source: 'analisi_urbanistica',
-      sourceLabel: 'Vedi analisi urbanistica',
-      propertyName: 'Ex negozio in via Roma',
-      city: 'Padova',
-    },
-  ];
+  return [];
 }
 
 export function saveLead(

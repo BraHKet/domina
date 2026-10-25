@@ -11,6 +11,9 @@ import { AdminLoginModal } from './components/AdminLoginModal';
 import {
   getStoredProperties,
   saveStoredProperties,
+  saveProperty,
+  deleteProperty,
+  fetchRemoteProperties,
   resetStoredProperties,
   getStoredLeads,
   getStoredAdminAuth,
@@ -66,6 +69,28 @@ export const App: React.FC = () => {
     checkAdminUrl();
     window.addEventListener('popstate', checkAdminUrl);
     return () => window.removeEventListener('popstate', checkAdminUrl);
+  }, []);
+
+  // Sync properties from Cloud Database (Google Sheets) on mount
+  useEffect(() => {
+    let isMounted = true;
+    fetchRemoteProperties()
+      .then((remoteProps) => {
+        if (isMounted && remoteProps && remoteProps.length > 0) {
+          setProperties(remoteProps);
+          saveStoredProperties(remoteProps);
+          setSelectedProperty((prev) => {
+            if (!prev) return remoteProps[0] || null;
+            return remoteProps.find((p) => p.id === prev.id) || remoteProps[0] || null;
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('Google Sheets cloud properties sync warning:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Keyboard shortcut: ESC closes open cards/modals
@@ -130,25 +155,17 @@ export const App: React.FC = () => {
     return properties.filter((p) => p.isVisibleToUser !== false).length;
   }, [properties]);
 
-  // Admin Property Save (Create / Update)
+  // Admin Property Save (Create / Update in Database & Local)
   const handleSaveProperty = (savedProp: Property) => {
-    const exists = properties.some((p) => p.id === savedProp.id);
-    let updatedList: Property[];
-    if (exists) {
-      updatedList = properties.map((p) => (p.id === savedProp.id ? savedProp : p));
-    } else {
-      updatedList = [savedProp, ...properties];
-    }
+    const updatedList = saveProperty(savedProp, properties);
     setProperties(updatedList);
-    saveStoredProperties(updatedList);
     setSelectedProperty(savedProp);
   };
 
-  // Admin Property Delete
+  // Admin Property Delete (Delete from Database & Local)
   const handleDeleteProperty = (id: string) => {
-    const updatedList = properties.filter((p) => p.id !== id);
+    const updatedList = deleteProperty(id, properties);
     setProperties(updatedList);
-    saveStoredProperties(updatedList);
     if (selectedProperty?.id === id) {
       setSelectedProperty(updatedList[0] || null);
     }

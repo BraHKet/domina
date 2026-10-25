@@ -75,25 +75,25 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
         setActivityDescription(property.businessHealth.activityDescription || '');
       }
     } else {
-      setName('Nuova Opportunità Padova');
-      setAddress('Via Dante Alighieri, 25 - 35139 Padova (PD)');
-      setCategory('negozi');
+      setName('');
+      setAddress('');
+      setCategory('capannoni');
       setActivityStatus('dismesso');
-      setCoveredAreaSqm(240);
-      setLotAreaSqm(310);
-      setImage('/images/immobile-001.jpg');
-      setDescription('Locale commerciale fronte strada con ampie vetrine, libero subito.');
-      setContext('Zona semicentrale ad alta intensità pedonale e residenziale.');
+      setCoveredAreaSqm('');
+      setLotAreaSqm('');
+      setImage('');
+      setDescription('');
+      setContext('');
       setIsVisibleToUser(true);
-      setLat('45.4110');
-      setLng('11.8780');
+      setLat('45.4075');
+      setLng('11.8800');
       setRev2023(950000);
       setMargin2023(14);
       setRev2024(990000);
       setMargin2024(15);
       setRev2025(1040000);
       setMargin2025(16);
-      setActivityDescription('Attività in esercizio con clientela fidelizzata e margini positivi.');
+      setActivityDescription('');
     }
   }, [property, isOpen]);
 
@@ -462,15 +462,20 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
             </div>
 
             {/* URL input */}
-            <div className="relative">
-              <Link2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                placeholder="Oppure incolla link/URL alla foto..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:outline-none focus:border-[#0d6e5a]"
-              />
+            <div className="space-y-1">
+              <div className="relative">
+                <Link2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  placeholder="Incolla link/URL alla foto (es. Imgur, Postimages, link web)..."
+                  className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:outline-none focus:border-[#0d6e5a]"
+                />
+              </div>
+              <p className="text-[10px] text-gray-500">
+                💡 Per il database cloud puoi caricare la foto su <strong>Imgur</strong> e incollare il link qui.
+              </p>
             </div>
           </div>
 
