@@ -14,8 +14,11 @@ import {
   saveProperty,
   deleteProperty,
   fetchRemoteProperties,
+  fetchRemoteGoogleSheetData,
   resetStoredProperties,
   getStoredLeads,
+  saveStoredLeads,
+  saveStoredClicks,
   getStoredAdminAuth,
   setStoredAdminAuth,
   recordClick,
@@ -71,9 +74,11 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', checkAdminUrl);
   }, []);
 
-  // Sync properties from Cloud Database (Google Sheets) on mount
+  // Sincronizza tutti i dati dai Database Google Sheets (Immobili, Lead e Clic) ad ogni ricaricamento della scheda
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Sincronizzazione database immobili
     fetchRemoteProperties()
       .then((remoteProps) => {
         if (isMounted && remoteProps && remoteProps.length > 0) {
@@ -88,6 +93,40 @@ export const App: React.FC = () => {
       .catch((err) => {
         console.warn('Google Sheets cloud properties sync warning:', err);
       });
+
+    // 2. Sincronizzazione database statistiche (Lead raccolti e Clic tracciati)
+    fetchRemoteGoogleSheetData()
+      .then((remoteData) => {
+        if (!isMounted || !remoteData) return;
+
+        if (remoteData.leads && Array.isArray(remoteData.leads)) {
+          setLeads(remoteData.leads);
+          saveStoredLeads(remoteData.leads);
+        }
+
+        if (remoteData.clicks && Array.isArray(remoteData.clicks)) {
+          saveStoredClicks(remoteData.clicks);
+        }
+
+        if (
+          remoteData.properties &&
+          Array.isArray(remoteData.properties) &&
+          remoteData.properties.length > 0
+        ) {
+          setProperties((current) => {
+            if (current.length === 0) {
+              saveStoredProperties(remoteData.properties!);
+              setSelectedProperty((prev) => prev || remoteData.properties![0] || null);
+              return remoteData.properties!;
+            }
+            return current;
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('Google Sheets cloud leads/clicks sync warning:', err);
+      });
+
     return () => {
       isMounted = false;
     };
@@ -338,7 +377,10 @@ export const App: React.FC = () => {
         isOpen={adminLeadsModalOpen}
         onClose={() => setAdminLeadsModalOpen(false)}
         leads={leads}
-        onLeadsUpdated={setLeads}
+        onLeadsUpdated={(updatedLeads) => {
+          setLeads(updatedLeads);
+          saveStoredLeads(updatedLeads);
+        }}
       />
     </div>
   );

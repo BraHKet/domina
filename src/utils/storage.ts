@@ -6,11 +6,12 @@ import {
   syncPropertyToGoogleSheet,
   deletePropertyFromGoogleSheet,
   fetchRemoteProperties,
+  fetchRemoteGoogleSheetData,
   syncAllPropertiesToGoogleSheet,
 } from './googleSheets';
 import { getDeviceInfo, getTrafficSource, getTimeOnSite, getFastUserCity } from './sessionTracker';
 
-export { fetchRemoteProperties, syncAllPropertiesToGoogleSheet };
+export { fetchRemoteProperties, fetchRemoteGoogleSheetData, syncAllPropertiesToGoogleSheet };
 
 const PROPERTIES_STORAGE_KEY = 'domina_properties_v4';
 const LEADS_STORAGE_KEY = 'domina_leads_v4';
@@ -147,6 +148,14 @@ export function clearStoredClicks(): void {
   }
 }
 
+export function saveStoredClicks(clicks: ClickEvent[]): void {
+  try {
+    localStorage.setItem(CLICKS_STORAGE_KEY, JSON.stringify(clicks));
+  } catch (e) {
+    console.error('Error saving clicks to storage:', e);
+  }
+}
+
 export function getClickStats(): ClickStats {
   const clicks = getStoredClicks();
   const bySource: Record<ClickSource, number> = {
@@ -178,6 +187,14 @@ export function getStoredLeads(): LeadSubmission[] {
     console.error('Error loading leads:', e);
   }
   return [];
+}
+
+export function saveStoredLeads(leads: LeadSubmission[]): void {
+  try {
+    localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads));
+  } catch (e) {
+    console.error('Error saving leads to storage:', e);
+  }
 }
 
 export function saveLead(

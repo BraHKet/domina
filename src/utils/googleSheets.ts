@@ -1,4 +1,4 @@
-import type { ClickEvent, LeadSubmission, Property } from '../types/property';
+import type { ClickEvent, LeadSubmission, Property, PropertyCategory, ActivityStatus } from '../types/property';
 
 const STATS_SHEET_URL_KEY = 'domina_google_sheet_webhook_url';
 const PROPERTIES_SHEET_URL_KEY = 'domina_properties_sheet_webhook_url';
@@ -287,50 +287,191 @@ export async function syncAllPropertiesToGoogleSheet(properties: Property[]): Pr
 }
 
 /**
- * Recupera l'elenco degli immobili/capannoni memorizzati nel database Google Sheets.
+ * Normalizza un oggetto immobile ricevuto da Google Sheets
  */
-export async function fetchRemoteProperties(): Promise<Property[] | null> {
-  const webhookUrl = getPropertiesWebhookUrl();
-  if (!webhookUrl) return null;
+export function normalizeProperty(p: any): Property {
+  const categoryLabels: Record<PropertyCategory, string> = {
+    negozi: 'Negozio / Locale commerciale',
+    capannoni: 'Capannone industriale',
+    altri: 'Altri immobili dismessi',
+  };
 
-  try {
-    const response = await fetch(`${webhookUrl}?action=get_properties`, {
-      method: 'GET',
-    });
-    if (!response.ok) return null;
-    const json = await response.json();
-    if (json && Array.isArray(json.properties) && json.properties.length > 0) {
-      return json.properties as Property[];
-    }
-    return null;
-  } catch (error) {
-    console.warn('Impossibile scaricare gli immobili da Google Sheets:', error);
-    return null;
-  }
+  const cat: PropertyCategory =
+    p.category === 'capannoni' || p.category === 'altri' ? p.category : 'negozi';
+
+  const actStatus: ActivityStatus =
+    p.activityStatus === 'attivo' || p.status === 'Attivo' ? 'attivo' : 'dismesso';
+
+  const lat =
+    Array.isArray(p.coordinates) && typeof p.coordinates[0] === 'number'
+      ? p.coordinates[0]
+      : parseFloat(p.coordinates?.[0]) || 45.4075;
+
+  const lng =
+    Array.isArray(p.coordinates) && typeof p.coordinates[1] === 'number'
+      ? p.coordinates[1]
+      : parseFloat(p.coordinates?.[1]) || 11.88;
+
+  return {
+    ...p,
+    id: String(p.id || `domina-${Date.now()}`),
+    name: String(p.name || 'Immobile Padova'),
+    code: String(p.code || 'PD-LOC-000'),
+    address: String(p.address || 'Padova (PD)'),
+    district: String(p.district || 'Padova'),
+    city: String(p.city || 'Padova'),
+    category: cat,
+    categoryLabel: p.categoryLabel || categoryLabels[cat],
+    status: actStatus === 'attivo' ? 'Attivo' : 'Dismesso',
+    activityStatus: actStatus,
+    isVisibleToUser: p.isVisibleToUser !== false && String(p.isVisibleToUser).toUpperCase() !== 'NO',
+    coordinates: [lat, lng],
+    coveredAreaSqm:
+      p.coveredAreaSqm !== null && p.coveredAreaSqm !== undefined && p.coveredAreaSqm !== ''
+        ? Number(p.coveredAreaSqm)
+        : null,
+    lotAreaSqm:
+      p.lotAreaSqm !== null && p.lotAreaSqm !== undefined && p.lotAreaSqm !== ''
+        ? Number(p.lotAreaSqm)
+        : null,
+    image: String(p.image || '/images/immobile-001.jpg'),
+    description: String(p.description || ''),
+    opportunityNotes: String(p.opportunityNotes || 'Opportunità di valorizzazione ad elevato potenziale.'),
+    surroundingContext: String(p.surroundingContext || p.context || ''),
+    accessibilityNotes: String(p.accessibilityNotes || 'Facilmente accessibile.'),
+    urbanPlanning: p.urbanPlanning || {
+      patClassification: 'Ambiti Urbani Consolidati',
+      piZoning: 'Zona di Completamento Urbanistico',
+      allowedUses: ['Commerciale', 'Direzionale'],
+      verifiedStatus: 'Verifica preliminare effettuata',
+      heritageConstraints: 'Verifica vincoli locali.',
+      bufferZones: 'Fascia di rispetto regolare.',
+      environmentalNotes: 'Nessuna criticità ambientale.',
+      criticalIssues: ['Verifica conformità impiantistica'],
+      strengths: ['Ottima collocazione'],
+      sources: 'Domina Intelligence SIT Padova',
+      elaborationDate: 'Ottobre 2026',
+    },
+    pdfPath: p.pdfPath || '/dossiers/domina-dossier-immobile-001.pdf',
+    pdfFileName: p.pdfFileName || 'domina-dossier-immobile-001.pdf',
+    pdfSize: p.pdfSize || '1.8 MB',
+    isDemonstrative: true,
+  };
 }
 
 /**
- * Fetches all remote records from Google Sheet Statistiche if the Apps Script doGet is enabled.
+ * Recupera l'elenco degli immobili/capannoni memorizzati nel database Google Sheets.
+ * Interroga il database Immobili e, se vuoto/non disponibile, esegue il fallback sul database Statistiche.
+ */
+export async function fetchRemoteProperties(): Promise<Property[] | null> {
+  const propertiesUrl = getPropertiesWebhookUrl();
+  const statsUrl = getStatsWebhookUrl();
+
+  const urlsToTry: string[] = [];
+  if (propertiesUrl) urlsToTry.push(propertiesUrl);
+  if (statsUrl && statsUrl !== propertiesUrl) urlsToTry.push(statsUrl);
+
+  for (const url of urlsToTry) {
+    try {
+      let response = await fetch(`${url}?action=get_properties`, { method: 'GET' });
+      if (!response.ok) {
+        response = await fetch(`${url}?action=get_all`, { method: 'GET' });
+      }
+      if (!response.ok) continue;
+
+      const json = await response.json();
+      if (json && Array.isArray(json.properties) && json.properties.length > 0) {
+        return json.properties.map(normalizeProperty);
+      }
+    } catch (error) {
+      console.warn(`Tentativo recupero immobili da ${url} non riuscito:`, error);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Recupera tutti i record (Immobili, Lead e Clic) dai database Google Sheets.
+ * Interroga entrambi i fogli (Statistiche e Immobili) e fonde le informazioni.
  */
 export async function fetchRemoteGoogleSheetData(): Promise<{
   properties?: Property[];
   leads: LeadSubmission[];
   clicks: ClickEvent[];
 } | null> {
-  const webhookUrl = getStatsWebhookUrl();
-  if (!webhookUrl) return null;
+  const statsUrl = getStatsWebhookUrl();
+  const propertiesUrl = getPropertiesWebhookUrl();
 
-  try {
-    const response = await fetch(`${webhookUrl}?action=get_all`, {
-      method: 'GET',
-    });
-    if (!response.ok) return null;
-    const json = await response.json();
-    return json;
-  } catch {
-    // If doGet is not set up or CORS prevents GET, fallback gracefully
-    return null;
+  const urlsToTry: string[] = [];
+  if (statsUrl) urlsToTry.push(statsUrl);
+  if (propertiesUrl && propertiesUrl !== statsUrl) urlsToTry.push(propertiesUrl);
+
+  if (urlsToTry.length === 0) return null;
+
+  const mergedLeads: LeadSubmission[] = [];
+  const mergedClicks: ClickEvent[] = [];
+  let foundProperties: Property[] = [];
+  let atLeastOneSuccess = false;
+
+  for (const url of urlsToTry) {
+    try {
+      const response = await fetch(`${url}?action=get_all`, { method: 'GET' });
+      if (!response.ok) continue;
+      const json = await response.json();
+      atLeastOneSuccess = true;
+
+      // Unione Leads
+      if (json && Array.isArray(json.leads) && json.leads.length > 0) {
+        for (const lead of json.leads) {
+          const exists = mergedLeads.some(
+            (l) =>
+              (l.id && l.id === lead.id) ||
+              (l.email === lead.email && l.timestamp === lead.timestamp)
+          );
+          if (!exists && lead.email && lead.email !== '-') {
+            mergedLeads.push(lead);
+          }
+        }
+      }
+
+      // Unione Clic
+      if (json && Array.isArray(json.clicks) && json.clicks.length > 0) {
+        for (const click of json.clicks) {
+          const exists = mergedClicks.some(
+            (c) =>
+              (c.id && c.id === click.id) ||
+              (c.timestamp === click.timestamp &&
+                c.source === click.source &&
+                c.propertyName === click.propertyName)
+          );
+          if (!exists) {
+            mergedClicks.push(click);
+          }
+        }
+      }
+
+      // Immobili
+      if (
+        json &&
+        Array.isArray(json.properties) &&
+        json.properties.length > 0 &&
+        foundProperties.length === 0
+      ) {
+        foundProperties = json.properties.map(normalizeProperty);
+      }
+    } catch (error) {
+      console.warn(`Errore sincronizzazione dati da ${url}:`, error);
+    }
   }
+
+  if (!atLeastOneSuccess) return null;
+
+  return {
+    properties: foundProperties.length > 0 ? foundProperties : undefined,
+    leads: mergedLeads,
+    clicks: mergedClicks,
+  };
 }
 
 export const APPS_SCRIPT_TEMPLATE = `// -------------------------------------------------------------
