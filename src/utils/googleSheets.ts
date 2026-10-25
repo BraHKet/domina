@@ -1,48 +1,80 @@
 import type { ClickEvent, LeadSubmission, Property } from '../types/property';
 
-const GOOGLE_SHEET_URL_KEY = 'domina_google_sheet_webhook_url';
+const STATS_SHEET_URL_KEY = 'domina_google_sheet_webhook_url';
+const PROPERTIES_SHEET_URL_KEY = 'domina_properties_sheet_webhook_url';
 
-// Default: Webhook Google Apps Script preconfigurato per tutti gli utenti
-export const DEFAULT_WEBHOOK_URL =
+// 1. Foglio Google per STATISTICHE (Click tracciati, visitatori e Lead acquisiti)
+export const DEFAULT_STATS_WEBHOOK_URL =
   import.meta.env.VITE_GOOGLE_SHEET_WEBHOOK_URL ||
+  'https://script.google.com/macros/s/AKfycbyzKOHX2qh0AyBWfhF05KZFNyJFAZ7Ymyp61xKFaAvDDKjAUAJx_kfcoSf2zJCqpYtH/exec';
+
+// 2. Foglio Google per IMMOBILI & CAPANNONI (Database delle schede immobiliari)
+export const DEFAULT_PROPERTIES_WEBHOOK_URL =
+  import.meta.env.VITE_PROPERTIES_SHEET_WEBHOOK_URL ||
   'https://script.google.com/macros/s/AKfycbz-NkOYbParXYUHIxPe2z1W7gokJM9M1FXm1IxqbWmj5E7JsT6rs-gYbiT3jNtIQnzE/exec';
 
-const PREVIOUS_LEGACY_URLS = [
-  'https://script.google.com/macros/s/AKfycbyzKOHX2qh0AyBWfhF05KZFNyJFAZ7Ymyp61xKFaAvDDKjAUAJx_kfcoSf2zJCqpYtH/exec',
-];
+// Alias per retrocompatibilità
+export const DEFAULT_WEBHOOK_URL = DEFAULT_STATS_WEBHOOK_URL;
 
-export function getGoogleSheetWebhookUrl(): string {
+export function getStatsWebhookUrl(): string {
   try {
-    const stored = localStorage.getItem(GOOGLE_SHEET_URL_KEY);
-    // Se è memorizzato un vecchio URL legacy, aggiornalo con quello nuovo
-    if (stored && PREVIOUS_LEGACY_URLS.includes(stored.trim())) {
-      localStorage.setItem(GOOGLE_SHEET_URL_KEY, DEFAULT_WEBHOOK_URL);
-      return DEFAULT_WEBHOOK_URL;
+    const stored = localStorage.getItem(STATS_SHEET_URL_KEY);
+    if (stored && stored.trim() !== '') {
+      // Se era stato memorizzato temporaneamente l'URL del foglio immobili, ripristina quello delle statistiche
+      if (stored.trim() === DEFAULT_PROPERTIES_WEBHOOK_URL) {
+        localStorage.setItem(STATS_SHEET_URL_KEY, DEFAULT_STATS_WEBHOOK_URL);
+        return DEFAULT_STATS_WEBHOOK_URL;
+      }
+      return stored.trim();
     }
+  } catch {
+    // Ignore error
+  }
+  return DEFAULT_STATS_WEBHOOK_URL;
+}
+
+export function getPropertiesWebhookUrl(): string {
+  try {
+    const stored = localStorage.getItem(PROPERTIES_SHEET_URL_KEY);
     if (stored && stored.trim() !== '') {
       return stored.trim();
     }
   } catch {
     // Ignore error
   }
-  return DEFAULT_WEBHOOK_URL;
+  return DEFAULT_PROPERTIES_WEBHOOK_URL;
+}
+
+export function getGoogleSheetWebhookUrl(): string {
+  return getStatsWebhookUrl();
 }
 
 export function setGoogleSheetWebhookUrl(url: string): void {
   try {
-    localStorage.setItem(GOOGLE_SHEET_URL_KEY, url.trim());
+    localStorage.setItem(STATS_SHEET_URL_KEY, url.trim());
   } catch (e) {
     console.error('Error saving Google Sheet webhook URL:', e);
+  }
+}
+
+export function setPropertiesWebhookUrl(url: string): void {
+  try {
+    localStorage.setItem(PROPERTIES_SHEET_URL_KEY, url.trim());
+  } catch (e) {
+    console.error('Error saving Properties webhook URL:', e);
   }
 }
 
 /**
  * Sends lead data to Google Sheets via Apps Script Webhook.
  * Uses mode: 'no-cors' so browser requests to Google Apps Script never get blocked by CORS.
+ * Invia al foglio delle statistiche e notifica anche il foglio immobili se separato.
  */
 export async function syncLeadToGoogleSheet(lead: LeadSubmission): Promise<boolean> {
-  const webhookUrl = getGoogleSheetWebhookUrl();
-  if (!webhookUrl) {
+  const statsUrl = getStatsWebhookUrl();
+  const propertiesUrl = getPropertiesWebhookUrl();
+
+  if (!statsUrl && !propertiesUrl) {
     console.warn('Google Sheet Webhook URL non configurata. Dati salvati solo in locale.');
     return false;
   }
@@ -62,8 +94,29 @@ export async function syncLeadToGoogleSheet(lead: LeadSubmission): Promise<boole
     timeOnSite: lead.timeOnSite || '0 sec',
   };
 
-  try {
-    await fetch(webhookUrl, {
+  let sent = false;
+
+  // 1. Invia sempre al Foglio Statistiche originale
+  if (statsUrl) {
+    try {
+      await fetch(statsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(payload),
+        mode: 'no-cors',
+        keepalive: true,
+      });
+      sent = true;
+    } catch (error) {
+      console.error('Errore durante l\'invio del lead al Foglio Statistiche:', error);
+    }
+  }
+
+  // 2. Se l'URL del foglio immobili è separato, invia copia di sicurezza anche lì
+  if (propertiesUrl && propertiesUrl !== statsUrl) {
+    fetch(propertiesUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
@@ -71,20 +124,21 @@ export async function syncLeadToGoogleSheet(lead: LeadSubmission): Promise<boole
       body: JSON.stringify(payload),
       mode: 'no-cors',
       keepalive: true,
-    });
-    return true;
-  } catch (error) {
-    console.error('Errore durante l\'invio del lead a Google Sheets:', error);
-    return false;
+    }).catch(() => {});
   }
+
+  return sent;
 }
 
 /**
  * Sends click event to Google Sheets via Apps Script Webhook.
+ * Invia al Foglio Statistiche originale.
  */
 export async function syncClickToGoogleSheet(click: ClickEvent): Promise<boolean> {
-  const webhookUrl = getGoogleSheetWebhookUrl();
-  if (!webhookUrl) {
+  const statsUrl = getStatsWebhookUrl();
+  const propertiesUrl = getPropertiesWebhookUrl();
+
+  if (!statsUrl && !propertiesUrl) {
     return false;
   }
 
@@ -103,8 +157,29 @@ export async function syncClickToGoogleSheet(click: ClickEvent): Promise<boolean
     timeOnSite: click.timeOnSite || '0 sec',
   };
 
-  try {
-    await fetch(webhookUrl, {
+  let sent = false;
+
+  // 1. Invia al Foglio Statistiche originale
+  if (statsUrl) {
+    try {
+      await fetch(statsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(payload),
+        mode: 'no-cors',
+        keepalive: true,
+      });
+      sent = true;
+    } catch (error) {
+      console.error('Errore durante l\'invio del clic al Foglio Statistiche:', error);
+    }
+  }
+
+  // 2. Se il foglio immobili è separato, invia anche lì in background
+  if (propertiesUrl && propertiesUrl !== statsUrl) {
+    fetch(propertiesUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
@@ -112,22 +187,20 @@ export async function syncClickToGoogleSheet(click: ClickEvent): Promise<boolean
       body: JSON.stringify(payload),
       mode: 'no-cors',
       keepalive: true,
-    });
-    return true;
-  } catch (error) {
-    console.error('Errore durante l\'invio del clic a Google Sheets:', error);
-    return false;
+    }).catch(() => {});
   }
+
+  return sent;
 }
 
 /**
  * Salva o aggiorna un immobile/capannone su Google Sheets via Apps Script Webhook.
- * Invia l'oggetto Property e sincronizza in tempo reale con la scheda "Immobili".
+ * Invia l'oggetto Property e sincronizza in tempo reale con la scheda "Immobili" del Foglio Immobili.
  */
 export async function syncPropertyToGoogleSheet(property: Property): Promise<boolean> {
-  const webhookUrl = getGoogleSheetWebhookUrl();
+  const webhookUrl = getPropertiesWebhookUrl();
   if (!webhookUrl) {
-    console.warn('Google Sheet Webhook URL non configurata. Immobile salvato solo in locale.');
+    console.warn('Google Sheet Webhook URL immobili non configurata. Immobile salvato solo in locale.');
     return false;
   }
 
@@ -157,7 +230,7 @@ export async function syncPropertyToGoogleSheet(property: Property): Promise<boo
  * Elimina un immobile/capannone da Google Sheets tramite ID.
  */
 export async function deletePropertyFromGoogleSheet(propertyId: string): Promise<boolean> {
-  const webhookUrl = getGoogleSheetWebhookUrl();
+  const webhookUrl = getPropertiesWebhookUrl();
   if (!webhookUrl) {
     return false;
   }
@@ -185,10 +258,10 @@ export async function deletePropertyFromGoogleSheet(propertyId: string): Promise
 }
 
 /**
- * Sincronizzazione massiva di tutti gli immobili iniziali su Google Sheets.
+ * Sincronizzazione massiva di tutti gli immobili su Google Sheets.
  */
 export async function syncAllPropertiesToGoogleSheet(properties: Property[]): Promise<boolean> {
-  const webhookUrl = getGoogleSheetWebhookUrl();
+  const webhookUrl = getPropertiesWebhookUrl();
   if (!webhookUrl) return false;
 
   const payload = {
@@ -217,7 +290,7 @@ export async function syncAllPropertiesToGoogleSheet(properties: Property[]): Pr
  * Recupera l'elenco degli immobili/capannoni memorizzati nel database Google Sheets.
  */
 export async function fetchRemoteProperties(): Promise<Property[] | null> {
-  const webhookUrl = getGoogleSheetWebhookUrl();
+  const webhookUrl = getPropertiesWebhookUrl();
   if (!webhookUrl) return null;
 
   try {
@@ -237,14 +310,14 @@ export async function fetchRemoteProperties(): Promise<Property[] | null> {
 }
 
 /**
- * Fetches all remote records from Google Sheet if the Apps Script doGet is enabled.
+ * Fetches all remote records from Google Sheet Statistiche if the Apps Script doGet is enabled.
  */
 export async function fetchRemoteGoogleSheetData(): Promise<{
   properties?: Property[];
   leads: LeadSubmission[];
   clicks: ClickEvent[];
 } | null> {
-  const webhookUrl = getGoogleSheetWebhookUrl();
+  const webhookUrl = getStatsWebhookUrl();
   if (!webhookUrl) return null;
 
   try {
