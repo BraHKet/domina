@@ -59,17 +59,19 @@ export function saveProperty(property: Property, existingProperties?: Property[]
   return updatedList;
 }
 
-/**
- * Elimina un immobile/capannone sia in locale sia dal Database Cloud.
- */
-export function deleteProperty(propertyId: string, existingProperties?: Property[]): Property[] {
+export function deleteProperty(
+  propertyId: string,
+  existingProperties?: Property[],
+  targetProperty?: Property | null
+): Property[] {
   const current = existingProperties || getStoredProperties();
+  const toDelete = targetProperty || current.find((p) => p.id === propertyId);
   const updatedList = current.filter((p) => p.id !== propertyId);
 
   saveStoredProperties(updatedList);
 
   // Delete from Cloud Database (Google Sheets) in background
-  deletePropertyFromGoogleSheet(propertyId).catch((err) =>
+  deletePropertyFromGoogleSheet(propertyId, toDelete?.code, toDelete?.name).catch((err) =>
     console.error('Cloud property delete error:', err)
   );
 

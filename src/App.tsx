@@ -74,61 +74,62 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', checkAdminUrl);
   }, []);
 
-  // Sincronizza tutti i dati dai Database Google Sheets (Immobili, Lead e Clic) ad ogni ricaricamento della scheda
+  // Sincronizza tutti i dati dai Database Google Sheets (Immobili, Lead e Clic) ad ogni ricaricamento della scheda e al cambio focus
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Sincronizzazione database immobili
-    fetchRemoteProperties()
-      .then((remoteProps) => {
-        if (isMounted && remoteProps && remoteProps.length > 0) {
-          setProperties(remoteProps);
-          saveStoredProperties(remoteProps);
-          setSelectedProperty((prev) => {
-            if (!prev) return remoteProps[0] || null;
-            return remoteProps.find((p) => p.id === prev.id) || remoteProps[0] || null;
-          });
-        }
-      })
-      .catch((err) => {
-        console.warn('Google Sheets cloud properties sync warning:', err);
-      });
+    const syncAll = () => {
+      // 1. Sincronizzazione database immobili
+      fetchRemoteProperties()
+        .then((remoteProps) => {
+          if (isMounted && remoteProps !== null) {
+            setProperties(remoteProps);
+            saveStoredProperties(remoteProps);
+            setSelectedProperty((prev) => {
+              if (!prev) return remoteProps[0] || null;
+              return remoteProps.find((p) => p.id === prev.id) || remoteProps[0] || null;
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn('Google Sheets cloud properties sync warning:', err);
+        });
 
-    // 2. Sincronizzazione database statistiche (Lead raccolti e Clic tracciati)
-    fetchRemoteGoogleSheetData()
-      .then((remoteData) => {
-        if (!isMounted || !remoteData) return;
+      // 2. Sincronizzazione database statistiche (Lead raccolti e Clic tracciati)
+      fetchRemoteGoogleSheetData()
+        .then((remoteData) => {
+          if (!isMounted || !remoteData) return;
 
-        if (remoteData.leads && Array.isArray(remoteData.leads)) {
-          setLeads(remoteData.leads);
-          saveStoredLeads(remoteData.leads);
-        }
+          if (remoteData.leads && Array.isArray(remoteData.leads)) {
+            setLeads(remoteData.leads);
+            saveStoredLeads(remoteData.leads);
+          }
 
-        if (remoteData.clicks && Array.isArray(remoteData.clicks)) {
-          saveStoredClicks(remoteData.clicks);
-        }
+          if (remoteData.clicks && Array.isArray(remoteData.clicks)) {
+            saveStoredClicks(remoteData.clicks);
+          }
+        })
+        .catch((err) => {
+          console.warn('Google Sheets cloud leads/clicks sync warning:', err);
+        });
+    };
 
-        if (
-          remoteData.properties &&
-          Array.isArray(remoteData.properties) &&
-          remoteData.properties.length > 0
-        ) {
-          setProperties((current) => {
-            if (current.length === 0) {
-              saveStoredProperties(remoteData.properties!);
-              setSelectedProperty((prev) => prev || remoteData.properties![0] || null);
-              return remoteData.properties!;
-            }
-            return current;
-          });
-        }
-      })
-      .catch((err) => {
-        console.warn('Google Sheets cloud leads/clicks sync warning:', err);
-      });
+    // Esegui subito al montaggio
+    syncAll();
+
+    // Sincronizza automaticamente anche quando l'utente torna sulla scheda o riattiva la finestra (es. tra dispositivi diversi)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncAll();
+      }
+    };
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', syncAll);
 
     return () => {
       isMounted = false;
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', syncAll);
     };
   }, []);
 
@@ -203,7 +204,8 @@ export const App: React.FC = () => {
 
   // Admin Property Delete (Delete from Database & Local)
   const handleDeleteProperty = (id: string) => {
-    const updatedList = deleteProperty(id, properties);
+    const target = properties.find((p) => p.id === id);
+    const updatedList = deleteProperty(id, properties, target);
     setProperties(updatedList);
     if (selectedProperty?.id === id) {
       setSelectedProperty(updatedList[0] || null);

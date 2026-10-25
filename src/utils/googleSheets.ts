@@ -227,34 +227,51 @@ export async function syncPropertyToGoogleSheet(property: Property): Promise<boo
 }
 
 /**
- * Elimina un immobile/capannone da Google Sheets tramite ID.
+ * Elimina un immobile/capannone da Google Sheets tramite ID, Codice o Nome.
+ * Invia la richiesta sia al foglio immobili che a quello statistiche per sicurezza.
  */
-export async function deletePropertyFromGoogleSheet(propertyId: string): Promise<boolean> {
-  const webhookUrl = getPropertiesWebhookUrl();
-  if (!webhookUrl) {
+export async function deletePropertyFromGoogleSheet(
+  propertyId: string,
+  propertyCode?: string,
+  propertyName?: string
+): Promise<boolean> {
+  const statsUrl = getStatsWebhookUrl();
+  const propertiesUrl = getPropertiesWebhookUrl();
+
+  if (!statsUrl && !propertiesUrl) {
     return false;
   }
 
   const payload = {
     action: 'delete_property',
     id: propertyId,
+    code: propertyCode || '',
+    name: propertyName || '',
   };
 
-  try {
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-      },
-      body: JSON.stringify(payload),
-      mode: 'no-cors',
-      keepalive: true,
-    });
-    return true;
-  } catch (error) {
-    console.error('Errore durante l\'eliminazione dell\'immobile da Google Sheets:', error);
-    return false;
+  const urlsToCall: string[] = [];
+  if (propertiesUrl) urlsToCall.push(propertiesUrl);
+  if (statsUrl && statsUrl !== propertiesUrl) urlsToCall.push(statsUrl);
+
+  let success = false;
+  for (const url of urlsToCall) {
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(payload),
+        mode: 'no-cors',
+        keepalive: true,
+      });
+      success = true;
+    } catch (error) {
+      console.error(`Errore durante l'eliminazione dell'immobile da Google Sheets (${url}):`, error);
+    }
   }
+
+  return success;
 }
 
 /**
@@ -371,6 +388,8 @@ export async function fetchRemoteProperties(): Promise<Property[] | null> {
   if (propertiesUrl) urlsToTry.push(propertiesUrl);
   if (statsUrl && statsUrl !== propertiesUrl) urlsToTry.push(statsUrl);
 
+  let candidateEmptyList: Property[] | null = null;
+
   for (const url of urlsToTry) {
     try {
       let response = await fetch(`${url}?action=get_properties`, { method: 'GET' });
@@ -380,15 +399,19 @@ export async function fetchRemoteProperties(): Promise<Property[] | null> {
       if (!response.ok) continue;
 
       const json = await response.json();
-      if (json && Array.isArray(json.properties) && json.properties.length > 0) {
-        return json.properties.map(normalizeProperty);
+      if (json && Array.isArray(json.properties)) {
+        if (json.properties.length > 0) {
+          return json.properties.map(normalizeProperty);
+        } else {
+          candidateEmptyList = [];
+        }
       }
     } catch (error) {
       console.warn(`Tentativo recupero immobili da ${url} non riuscito:`, error);
     }
   }
 
-  return null;
+  return candidateEmptyList;
 }
 
 /**
@@ -545,13 +568,34 @@ function doPost(e) {
 
     // 2. ELIMINAZIONE IMMOBILE
     if (action === "delete_property") {
-      var propSheet = ss.getSheetByName("Immobili");
-      if (propSheet) {
+      var propSheet = ss.getSheetByName("Immobili") || ss.getActiveSheet();
+      if (propSheet && propSheet.getLastRow() > 1) {
         var values = propSheet.getDataRange().getValues();
-        for (var i = 1; i < values.length; i++) {
-          if (String(values[i][0]) === String(data.id)) {
+        var targetId = String(data.id || "").trim();
+        var targetCode = String(data.code || "").trim();
+        var targetName = String(data.name || "").trim();
+
+        for (var i = values.length - 1; i >= 1; i--) {
+          var rowId = String(values[i][0] || "").trim();
+          var rowCode = String(values[i][1] || "").trim();
+          var rowName = String(values[i][2] || "").trim();
+
+          var match = false;
+          if (targetId && rowId && rowId === targetId) match = true;
+          if (!match && targetCode && rowCode && rowCode === targetCode) match = true;
+          if (!match && targetName && rowName && rowName === targetName) match = true;
+
+          if (!match && targetId && values[i][14]) {
+            try {
+              var parsed = JSON.parse(values[i][14]);
+              if (parsed && (String(parsed.id).trim() === targetId || String(parsed.code).trim() === targetCode)) {
+                match = true;
+              }
+            } catch(e) {}
+          }
+
+          if (match) {
             propSheet.deleteRow(i + 1);
-            break;
           }
         }
       }
