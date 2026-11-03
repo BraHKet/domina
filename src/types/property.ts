@@ -14,6 +14,32 @@ export interface TargetProposal {
   estimatedReturn: string;
 }
 
+export type ValueSourceType = 'misurato' | 'stimato' | 'da documento';
+
+export interface FieldReliability {
+  source?: ValueSourceType;
+  reliability?: 'bassa' | 'media' | 'alta';
+  note?: string;
+}
+
+export interface UrbanLotData {
+  zona: string; // es. "C1"
+  comune?: string; // es. "Padova"
+  perc_in_zona?: number | null; // percentuale 0-100 (es. 100)
+  st?: number | null; // Superficie territoriale (mq)
+  slp?: number | null; // SLP esistente (mq)
+  cop?: number | null; // Superficie coperta esistente (mq)
+  sco?: number | null; // Superficie scoperta esistente (mq)
+  vol?: number | null; // Volume esistente (mc), opzionale
+  fonti_affidabilita?: {
+    st?: FieldReliability;
+    slp?: FieldReliability;
+    cop?: FieldReliability;
+    sco?: FieldReliability;
+    vol?: FieldReliability;
+  };
+}
+
 export interface Property {
   id: string;
   name: string;
@@ -67,6 +93,9 @@ export interface Property {
     sources: string;
     elaborationDate: string;
   };
+
+  // Dati Urbanistici Reali del Lotto (Piano degli Interventi)
+  urbanLotData?: UrbanLotData;
 
   // Dossier PDF
   pdfPath: string;

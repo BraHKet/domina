@@ -241,12 +241,12 @@ export const App: React.FC = () => {
       proprietario: 'trova_proprietario',
     };
     const titles: Record<string, string> = {
-      analisi: 'Analisi urbanistica',
+      analisi: 'Perizia completa',
       target: 'Dimmi a chi proporla',
       proprietario: 'Trova il proprietario',
     };
     const labels: Record<string, string> = {
-      analisi: 'Vedi analisi urbanistica',
+      analisi: 'Richiedi perizia completa',
       target: 'Dimmi a chi proporla',
       proprietario: 'Trova il proprietario',
     };

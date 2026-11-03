@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Trash2, MapPin, Upload, Link2, Eye, EyeOff, Activity } from 'lucide-react';
-import type { Property, PropertyCategory, ActivityStatus } from '../types/property';
+import { X, Save, Trash2, MapPin, Upload, Link2, Eye, EyeOff, Activity, Building2 } from 'lucide-react';
+import type { Property, PropertyCategory, ActivityStatus, ValueSourceType } from '../types/property';
 
 interface AdminPropertyModalProps {
   property: Property | null;
@@ -43,6 +43,16 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
     'Attività commerciale in regolare esercizio con clientela fidelizzata, fatturato in crescita e canone sostenibile.'
   );
 
+  // Urban Planning Lot Fields
+  const [zona, setZona] = useState('C1');
+  const [percInZona, setPercInZona] = useState<number | ''>(100);
+  const [st, setSt] = useState<number | ''>('');
+  const [slp, setSlp] = useState<number | ''>('');
+  const [cop, setCop] = useState<number | ''>('');
+  const [sco, setSco] = useState<number | ''>('');
+  const [vol, setVol] = useState<number | ''>('');
+  const [fonte, setFonte] = useState<ValueSourceType>('misurato');
+
   useEffect(() => {
     if (property) {
       setName(property.name);
@@ -74,6 +84,31 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
         }
         setActivityDescription(property.businessHealth.activityDescription || '');
       }
+
+      // Dati Urbanistici del lotto
+      if (property.urbanLotData) {
+        setZona(property.urbanLotData.zona || 'C1');
+        setPercInZona(property.urbanLotData.perc_in_zona ?? 100);
+        setSt(property.urbanLotData.st ?? property.lotAreaSqm ?? '');
+        setSlp(property.urbanLotData.slp ?? '');
+        setCop(property.urbanLotData.cop ?? property.coveredAreaSqm ?? '');
+        setSco(property.urbanLotData.sco ?? '');
+        setVol(property.urbanLotData.vol ?? '');
+        setFonte(property.urbanLotData.fonti_affidabilita?.st?.source || 'misurato');
+      } else {
+        setZona('C1');
+        setPercInZona(100);
+        setSt(property.lotAreaSqm ?? '');
+        setSlp('');
+        setCop(property.coveredAreaSqm ?? '');
+        setSco(
+          property.lotAreaSqm && property.coveredAreaSqm
+            ? Math.max(0, property.lotAreaSqm - property.coveredAreaSqm)
+            : ''
+        );
+        setVol('');
+        setFonte('misurato');
+      }
     } else {
       setName('');
       setAddress('');
@@ -94,6 +129,14 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       setRev2025(1040000);
       setMargin2025(16);
       setActivityDescription('');
+      setZona('C1');
+      setPercInZona(100);
+      setSt('');
+      setSlp('');
+      setCop('');
+      setSco('');
+      setVol('');
+      setFonte('misurato');
     }
   }, [property, isOpen]);
 
@@ -179,6 +222,23 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
         strengths: ['Ottima collocazione'],
         sources: 'Domina Intelligence SIT Padova',
         elaborationDate: 'Ottobre 2026',
+      },
+      urbanLotData: {
+        zona: zona.trim() || 'C1',
+        comune: 'Padova',
+        perc_in_zona: percInZona === '' ? 100 : Number(percInZona),
+        st: st === '' ? (lotAreaSqm === '' ? null : Number(lotAreaSqm)) : Number(st),
+        slp: slp === '' ? null : Number(slp),
+        cop: cop === '' ? (coveredAreaSqm === '' ? null : Number(coveredAreaSqm)) : Number(cop),
+        sco: sco === '' ? null : Number(sco),
+        vol: vol === '' ? null : Number(vol),
+        fonti_affidabilita: {
+          st: { source: fonte, reliability: 'alta' },
+          slp: { source: fonte, reliability: 'media' },
+          cop: { source: fonte, reliability: 'alta' },
+          sco: { source: fonte, reliability: 'media' },
+          vol: { source: fonte, reliability: 'media' },
+        },
       },
       pdfPath: property?.pdfPath || '/dossiers/domina-dossier-immobile-001.pdf',
       pdfFileName: property?.pdfFileName || 'domina-dossier-immobile-001.pdf',
@@ -429,6 +489,162 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
               <option value="capannoni">Capannoni industriali</option>
               <option value="altri">Altri immobili dismessi</option>
             </select>
+          </div>
+
+          {/* SEZIONE: DATI URBANISTICI DEL LOTTO (PIANO DEGLI INTERVENTI) */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <span className="text-[11px] font-bold text-gray-800 uppercase tracking-wide flex items-center space-x-1.5">
+                <Building2 className="w-3.5 h-3.5 text-[#0d6e5a]" />
+                <span>Dati Urbanistici del Lotto (Piano degli Interventi)</span>
+              </span>
+              <span className="text-[10px] text-gray-500 font-medium">Sf si calcola</span>
+            </div>
+
+            {/* Zona e Percentuale in Zona */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">
+                  Zona Urbanistica (es. C1) *
+                </label>
+                <div className="flex items-center space-x-1.5">
+                  <input
+                    type="text"
+                    value={zona}
+                    onChange={(e) => setZona(e.target.value)}
+                    placeholder="es. C1"
+                    required
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white font-bold uppercase focus:border-[#0d6e5a]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setZona('C1')}
+                    className="px-2 py-1.5 rounded text-[10px] font-bold bg-[#0d6e5a]/10 text-[#0d6e5a] hover:bg-[#0d6e5a]/20"
+                    title="Imposta zona C1"
+                  >
+                    Padova C1
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-bold text-gray-700 uppercase">
+                    % in Zona (0-100)
+                  </label>
+                  <span className="text-[9px] text-gray-400">Soglia min. 95%</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={percInZona}
+                  onChange={(e) => setPercInZona(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="100"
+                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:border-[#0d6e5a]"
+                />
+              </div>
+            </div>
+
+            {/* St e SLP */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">
+                  St - Superficie Territoriale (mq) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={st}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : Number(e.target.value);
+                    setSt(val);
+                    setLotAreaSqm(val);
+                  }}
+                  placeholder="es. 5000"
+                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:border-[#0d6e5a]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">
+                  SLP - SLP Esistente (mq) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={slp}
+                  onChange={(e) => setSlp(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="es. 1000"
+                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:border-[#0d6e5a]"
+                />
+              </div>
+            </div>
+
+            {/* Cop, Sco e Vol */}
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">
+                  Cop - Coperto (mq)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={cop}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : Number(e.target.value);
+                    setCop(val);
+                    setCoveredAreaSqm(val);
+                  }}
+                  placeholder="es. 500"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:border-[#0d6e5a]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">
+                  Sco - Scoperto (mq)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={sco}
+                  onChange={(e) => setSco(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="es. 4500"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:border-[#0d6e5a]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">
+                  Vol - Volume (mc)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={vol}
+                  onChange={(e) => setVol(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="Opzionale"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:border-[#0d6e5a]"
+                />
+              </div>
+            </div>
+
+            {/* Fonte e Affidabilità */}
+            <div className="pt-1">
+              <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">
+                Fonte e Affidabilità Dati
+              </label>
+              <select
+                value={fonte}
+                onChange={(e) => setFonte(e.target.value as ValueSourceType)}
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-900 bg-white focus:border-[#0d6e5a]"
+              >
+                <option value="misurato">Dato misurato in loco (Alta affidabilità)</option>
+                <option value="da documento">Da documento catastale / titolo edilizio (Alta affidabilità)</option>
+                <option value="stimato">Dato stimato da planimetria / ortofoto (Media affidabilità)</option>
+              </select>
+            </div>
           </div>
 
           {/* Caricamento Foto: Upload da computer o Link URL */}

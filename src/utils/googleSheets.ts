@@ -369,6 +369,72 @@ export function normalizeProperty(p: any): Property {
       sources: 'Domina Intelligence SIT Padova',
       elaborationDate: 'Ottobre 2026',
     },
+    urbanLotData: p.urbanLotData
+      ? {
+          zona: String(p.urbanLotData.zona || 'C1'),
+          comune: String(p.urbanLotData.comune || 'Padova'),
+          perc_in_zona:
+            p.urbanLotData.perc_in_zona !== null &&
+            p.urbanLotData.perc_in_zona !== undefined &&
+            p.urbanLotData.perc_in_zona !== ''
+              ? Number(p.urbanLotData.perc_in_zona)
+              : 100,
+          st:
+            p.urbanLotData.st !== null &&
+            p.urbanLotData.st !== undefined &&
+            p.urbanLotData.st !== ''
+              ? Number(p.urbanLotData.st)
+              : null,
+          slp:
+            p.urbanLotData.slp !== null &&
+            p.urbanLotData.slp !== undefined &&
+            p.urbanLotData.slp !== ''
+              ? Number(p.urbanLotData.slp)
+              : null,
+          cop:
+            p.urbanLotData.cop !== null &&
+            p.urbanLotData.cop !== undefined &&
+            p.urbanLotData.cop !== ''
+              ? Number(p.urbanLotData.cop)
+              : null,
+          sco:
+            p.urbanLotData.sco !== null &&
+            p.urbanLotData.sco !== undefined &&
+            p.urbanLotData.sco !== ''
+              ? Number(p.urbanLotData.sco)
+              : null,
+          vol:
+            p.urbanLotData.vol !== null &&
+            p.urbanLotData.vol !== undefined &&
+            p.urbanLotData.vol !== ''
+              ? Number(p.urbanLotData.vol)
+              : null,
+          fonti_affidabilita: p.urbanLotData.fonti_affidabilita,
+        }
+      : p.zona !== undefined || p.st !== undefined
+      ? {
+          zona: String(p.zona || 'C1'),
+          comune: String(p.comune || 'Padova'),
+          perc_in_zona:
+            p.perc_in_zona !== undefined && p.perc_in_zona !== '' ? Number(p.perc_in_zona) : 100,
+          st:
+            p.st !== undefined && p.st !== ''
+              ? Number(p.st)
+              : p.lotAreaSqm !== null && p.lotAreaSqm !== undefined
+              ? Number(p.lotAreaSqm)
+              : null,
+          slp: p.slp !== undefined && p.slp !== '' ? Number(p.slp) : null,
+          cop:
+            p.cop !== undefined && p.cop !== ''
+              ? Number(p.cop)
+              : p.coveredAreaSqm !== null && p.coveredAreaSqm !== undefined
+              ? Number(p.coveredAreaSqm)
+              : null,
+          sco: p.sco !== undefined && p.sco !== '' ? Number(p.sco) : null,
+          vol: p.vol !== undefined && p.vol !== '' ? Number(p.vol) : null,
+          fonti_affidabilita: p.fonti_affidabilita,
+        }
+      : undefined,
     pdfPath: p.pdfPath || '/dossiers/domina-dossier-immobile-001.pdf',
     pdfFileName: p.pdfFileName || 'domina-dossier-immobile-001.pdf',
     pdfSize: p.pdfSize || '1.8 MB',
@@ -506,38 +572,37 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var action = data.action || "";
 
-    // 1. SALVATAGGIO / MODIFICA SINGOLO IMMOBILE / CAPANNONE
-    if (action === "save_property") {
-      var propSheet = getOrCreateSheet(ss, "Immobili", [
-        "ID",
-        "Codice",
-        "Nome",
-        "Indirizzo",
-        "Categoria",
-        "Stato Attività",
-        "Visibile Utente",
-        "Superficie Coperta (mq)",
-        "Superficie Lotto (mq)",
-        "Latitudine",
-        "Longitudine",
-        "URL Immagine",
-        "Descrizione",
-        "Data Ultima Modifica",
-        "Dati Completi (JSON)"
-      ]);
+    // Intestazioni per il foglio Immobili con supporto Analisi Urbanistica
+    var propertyHeaders = [
+      "ID",
+      "Codice",
+      "Nome",
+      "Indirizzo",
+      "Categoria",
+      "Stato Attività",
+      "Visibile Utente",
+      "Superficie Coperta (mq)",
+      "Superficie Lotto (mq)",
+      "Latitudine",
+      "Longitudine",
+      "URL Immagine",
+      "Descrizione",
+      "Zona Urbanistica",
+      "% in Zona",
+      "St - Sup. Territoriale (mq)",
+      "SLP Esistente (mq)",
+      "Cop - Coperto Esistente (mq)",
+      "Sco - Scoperto Esistente (mq)",
+      "Vol - Volume Esistente (mc)",
+      "Fonti e Affidabilità",
+      "Data Ultima Modifica",
+      "Dati Completi (JSON)"
+    ];
 
-      var prop = data.property;
-      var values = propSheet.getDataRange().getValues();
-      var rowIndex = -1;
-
-      for (var i = 1; i < values.length; i++) {
-        if (String(values[i][0]) === String(prop.id)) {
-          rowIndex = i + 1;
-          break;
-        }
-      }
-
-      var rowData = [
+    // Helper per costruire la riga immobile
+    function buildPropertyRow(prop) {
+      var u = prop.urbanLotData || {};
+      return [
         prop.id,
         prop.code || "",
         prop.name || "",
@@ -551,9 +616,34 @@ function doPost(e) {
         prop.coordinates ? prop.coordinates[1] : "",
         prop.image || "",
         prop.description || "",
+        u.zona || "C1",
+        u.perc_in_zona !== undefined && u.perc_in_zona !== null ? u.perc_in_zona : 100,
+        u.st !== undefined && u.st !== null ? u.st : (prop.lotAreaSqm || ""),
+        u.slp !== undefined && u.slp !== null ? u.slp : "",
+        u.cop !== undefined && u.cop !== null ? u.cop : (prop.coveredAreaSqm || ""),
+        u.sco !== undefined && u.sco !== null ? u.sco : "",
+        u.vol !== undefined && u.vol !== null ? u.vol : "",
+        u.fonti_affidabilita ? JSON.stringify(u.fonti_affidabilita) : "",
         new Date().toLocaleString("it-IT"),
         JSON.stringify(prop)
       ];
+    }
+
+    // 1. SALVATAGGIO / MODIFICA SINGOLO IMMOBILE / CAPANNONE
+    if (action === "save_property") {
+      var propSheet = getOrCreateSheet(ss, "Immobili", propertyHeaders);
+      var prop = data.property;
+      var values = propSheet.getDataRange().getValues();
+      var rowIndex = -1;
+
+      for (var i = 1; i < values.length; i++) {
+        if (String(values[i][0]) === String(prop.id)) {
+          rowIndex = i + 1;
+          break;
+        }
+      }
+
+      var rowData = buildPropertyRow(prop);
 
       if (rowIndex > 0) {
         propSheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
@@ -585,13 +675,20 @@ function doPost(e) {
           if (!match && targetCode && rowCode && rowCode === targetCode) match = true;
           if (!match && targetName && rowName && rowName === targetName) match = true;
 
-          if (!match && targetId && values[i][14]) {
-            try {
-              var parsed = JSON.parse(values[i][14]);
-              if (parsed && (String(parsed.id).trim() === targetId || String(parsed.code).trim() === targetCode)) {
-                match = true;
+          // Cerca anche nella colonna JSON (ultima o penultima)
+          if (!match && targetId) {
+            for (var c = values[i].length - 1; c >= 13; c--) {
+              var cellStr = String(values[i][c] || "").trim();
+              if (cellStr.startsWith("{") && cellStr.endsWith("}")) {
+                try {
+                  var parsed = JSON.parse(cellStr);
+                  if (parsed && (String(parsed.id).trim() === targetId || String(parsed.code).trim() === targetCode)) {
+                    match = true;
+                    break;
+                  }
+                } catch(e) {}
               }
-            } catch(e) {}
+            }
           }
 
           if (match) {
@@ -606,23 +703,7 @@ function doPost(e) {
 
     // 3. SALVATAGGIO MASSIVO IMMOBILI
     if (action === "save_all_properties" && Array.isArray(data.properties)) {
-      var propSheet = getOrCreateSheet(ss, "Immobili", [
-        "ID",
-        "Codice",
-        "Nome",
-        "Indirizzo",
-        "Categoria",
-        "Stato Attività",
-        "Visibile Utente",
-        "Superficie Coperta (mq)",
-        "Superficie Lotto (mq)",
-        "Latitudine",
-        "Longitudine",
-        "URL Immagine",
-        "Descrizione",
-        "Data Ultima Modifica",
-        "Dati Completi (JSON)"
-      ]);
+      var propSheet = getOrCreateSheet(ss, "Immobili", propertyHeaders);
 
       for (var k = 0; k < data.properties.length; k++) {
         var prop = data.properties[k];
@@ -634,23 +715,7 @@ function doPost(e) {
             break;
           }
         }
-        var rowData = [
-          prop.id,
-          prop.code || "",
-          prop.name || "",
-          prop.address || "",
-          prop.category || "capannoni",
-          prop.activityStatus || (prop.status === "Attivo" ? "attivo" : "dismesso"),
-          prop.isVisibleToUser !== false ? "SI" : "NO",
-          prop.coveredAreaSqm !== null && prop.coveredAreaSqm !== undefined ? prop.coveredAreaSqm : "",
-          prop.lotAreaSqm !== null && prop.lotAreaSqm !== undefined ? prop.lotAreaSqm : "",
-          prop.coordinates ? prop.coordinates[0] : "",
-          prop.coordinates ? prop.coordinates[1] : "",
-          prop.image || "",
-          prop.description || "",
-          new Date().toLocaleString("it-IT"),
-          JSON.stringify(prop)
-        ];
+        var rowData = buildPropertyRow(prop);
         if (rowIndex > 0) {
           propSheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
         } else {
@@ -715,10 +780,15 @@ function doGet(e) {
         if (!pRow[0]) continue;
 
         var propObj = null;
-        if (pRow[14]) {
-          try {
-            propObj = JSON.parse(pRow[14]);
-          } catch (err) {}
+        // Cerca colonna JSON partendo dal fondo
+        for (var c = pRow.length - 1; c >= 13; c--) {
+          var cellVal = String(pRow[c] || "").trim();
+          if (cellVal.startsWith("{") && cellVal.endsWith("}") && cellVal.indexOf('"id"') !== -1) {
+            try {
+              propObj = JSON.parse(cellVal);
+              break;
+            } catch (err) {}
+          }
         }
 
         if (!propObj) {
@@ -737,6 +807,15 @@ function doGet(e) {
             coordinates: [Number(pRow[9]) || 45.4075, Number(pRow[10]) || 11.8800],
             image: String(pRow[11]),
             description: String(pRow[12]),
+            urbanLotData: {
+              zona: String(pRow[13] || "C1"),
+              perc_in_zona: pRow[14] !== "" ? Number(pRow[14]) : 100,
+              st: pRow[15] !== "" ? Number(pRow[15]) : (pRow[8] !== "" ? Number(pRow[8]) : null),
+              slp: pRow[16] !== "" ? Number(pRow[16]) : null,
+              cop: pRow[17] !== "" ? Number(pRow[17]) : (pRow[7] !== "" ? Number(pRow[7]) : null),
+              sco: pRow[18] !== "" ? Number(pRow[18]) : null,
+              vol: pRow[19] !== "" ? Number(pRow[19]) : null
+            },
             district: "Padova",
             city: "Padova",
             isDemonstrative: true

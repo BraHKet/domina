@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import type { Property } from '../types/property';
+import { UrbanPlanningDashboard } from './UrbanPlanningDashboard';
 import {
   X,
   MapPin,
   Store,
   Maximize2,
   Disc,
-  FileText,
-  Compass,
   FileCheck2,
   HelpCircle,
   UserCheck,
@@ -191,39 +190,21 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               </div>
             </div>
 
-            {/* Descrizione row */}
-            <div className="flex items-start space-x-3 pt-1">
-              <FileText className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <div className="text-xs font-bold text-gray-900 mb-1">Descrizione</div>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  {property.description}
-                </p>
-              </div>
-            </div>
-
-            {/* Contesto row */}
-            <div className="flex items-start space-x-3 pt-1">
-              <Compass className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <div className="text-xs font-bold text-gray-900 mb-1">Contesto</div>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  {property.context || property.surroundingContext}
-                </p>
-              </div>
-            </div>
+            {/* SEZIONE ANALISI URBANISTICA (VISIBILE SCORRENDO CON IL MOUSE) */}
+            <UrbanPlanningDashboard property={property} isEmbedded={true} />
           </div>
 
           {/* Footer Action Buttons: THREE BUTTONS */}
           <div className="p-4 bg-white border-t border-gray-100 flex-none space-y-2">
-            {/* Row 1: Vedi analisi urbanistica & Dimmi a chi proporla */}
+            {/* Row 1: Perizia completa & Dimmi a chi proporla */}
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => onRequestAction('analisi', property)}
                 className="w-full py-2.5 px-2 rounded-xl flex items-center justify-center space-x-1.5 bg-[#0d6e5a] hover:bg-[#095747] text-white font-semibold text-xs tracking-tight shadow-xs transition-all"
+                title="Richiedi perizia completa"
               >
                 <FileCheck2 className="w-3.5 h-3.5" />
-                <span className="truncate">Analisi urbanistica</span>
+                <span className="truncate">Perizia completa</span>
               </button>
 
               <button
