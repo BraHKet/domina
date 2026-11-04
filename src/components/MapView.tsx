@@ -33,7 +33,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
-  const clusterMarkerRef = useRef<L.Marker | null>(null);
+  const reservedMarkerRef = useRef<L.Marker | null>(null);
   const previousViewRef = useRef<{ center: L.LatLng; zoom: number } | null>(null);
 
   // Initialize Leaflet Map
@@ -82,18 +82,13 @@ export const MapView: React.FC<MapViewProps> = ({
     // Clear existing markers
     Object.values(markersRef.current).forEach((marker) => marker.remove());
     markersRef.current = {};
-
-    if (clusterMarkerRef.current) {
-      clusterMarkerRef.current.remove();
-      clusterMarkerRef.current = null;
-    }
+    reservedMarkerRef.current?.remove();
+    reservedMarkerRef.current = null;
 
     // Segregate visible vs hidden properties
     const visibleProperties = isAdmin
       ? properties
       : properties.filter((p) => p.isVisibleToUser !== false);
-
-    const hiddenProperties = properties.filter((p) => p.isVisibleToUser === false);
 
     // 1. Render standard pins
     visibleProperties.forEach((prop) => {
@@ -117,7 +112,7 @@ export const MapView: React.FC<MapViewProps> = ({
           if (!tooltip) return;
           const roomAbove = map.latLngToContainerPoint(marker.getLatLng()).y > HOVER_CARD_HEIGHT;
           tooltip.options.direction = roomAbove ? 'top' : 'bottom';
-          tooltip.options.offset = roomAbove ? [0, -42] : [0, 4];
+          tooltip.options.offset = roomAbove ? [0, -50] : [0, 4];
         });
         marker.bindTooltip(() => createHoverCard(prop), {
           className: 'domina-hover-card',
@@ -130,31 +125,17 @@ export const MapView: React.FC<MapViewProps> = ({
       markersRef.current[prop.id] = marker;
     });
 
-    // 2. In USER mode, if there are hidden properties:
-    // Render the ROUND CIRCULAR CLUSTER PIN with the number of hidden locations!
-    if (!isAdmin && hiddenProperties.length > 0) {
-      // Calculate centroid of hidden properties (or default near Padova center)
-      const avgLat =
-        hiddenProperties.reduce((sum, p) => sum + p.coordinates[0], 0) / hiddenProperties.length ||
-        45.412;
-      const avgLng =
-        hiddenProperties.reduce((sum, p) => sum + p.coordinates[1], 0) / hiddenProperties.length ||
-        11.905;
-
-      const clusterIcon = createLockedClusterIcon(hiddenProperties.length);
-
-      const clusterMarker = L.marker([avgLat, avgLng], {
-        icon: clusterIcon,
+    // 2. I riservati stanno sempre in centro città: la posizione non dipende dagli immobili
+    const reservedCount = properties.filter((p) => p.isVisibleToUser === false).length;
+    if (!isAdmin && reservedCount > 0) {
+      const reservedMarker = L.marker(PADOVA_CENTER, {
+        icon: createReservedIcon(reservedCount),
         zIndexOffset: 1200,
-        title: `${hiddenProperties.length} opportunità riservate - Clicca per sbloccare`,
+        title: `${reservedCount} ${reservedCount === 1 ? 'immobile riservato' : 'immobili riservati'}: clicca per sbloccare`,
       });
-
-      clusterMarker.on('click', () => {
-        onOpenUnlockModal(hiddenProperties.length);
-      });
-
-      clusterMarker.addTo(map);
-      clusterMarkerRef.current = clusterMarker;
+      reservedMarker.on('click', () => onOpenUnlockModal(reservedCount));
+      reservedMarker.addTo(map);
+      reservedMarkerRef.current = reservedMarker;
     }
   }, [properties, selectedProperty, isAdmin, onSelectProperty, onOpenUnlockModal]);
 
@@ -240,97 +221,71 @@ function createHoverCard(property: Property): HTMLElement {
   return card;
 }
 
+const PIN_STYLES: Record<Property['category'], { color: string; icon: string }> = {
+  negozi: {
+    color: '#2563eb',
+    icon: 'M4 10v10h16V10M3 10l1.5-6h15L21 10M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M10 20v-5h4v5',
+  },
+  capannoni: {
+    color: '#7c3aed',
+    icon: 'M3 21V9l9-5 9 5v12M8 21v-7h8v7M8 17.5h8',
+  },
+  altri: {
+    color: '#db2777',
+    icon: 'M6 21V4h12v17M4 21h16M10 8h.01M14 8h.01M10 12h.01M14 12h.01M10 21v-5h4v5',
+  },
+};
+
+const LOCK_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+
 /**
- * Creates the exact teardrop pin matching the reference screenshot.
- * In Admin mode, if the pin is hidden from users, it shows a subtle lock badge.
+ * Pin bianco con disco colorato per tipologia: il bordo chiaro lo stacca dal satellite.
+ * In Admin, un pin nascosto agli utenti porta un piccolo lucchetto.
  */
 function createTeardropMarkerIcon(
   property: Property,
   isSelected: boolean,
   isAdminHidden: boolean
 ): L.DivIcon {
-  const isCapannone = property.category === 'capannoni';
-  const pinColor = isCapannone ? '#0d6e5a' : '#142a3a';
-
-  let innerIconSvg = '';
-  if (property.category === 'capannoni') {
-    innerIconSvg = `
-      <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    `;
-  } else {
-    innerIconSvg = `
-      <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    `;
-  }
-
-  const selectedClass = isSelected ? 'domina-marker-selected' : '';
-  const ringHtml = isSelected
-    ? `<div class="absolute -inset-1 rounded-full border-2 border-white animate-ping opacity-80"></div>`
-    : '';
-
-  const adminLockBadge = isAdminHidden
-    ? `<div class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border border-white flex items-center justify-center text-white text-[9px] shadow-sm font-bold">🔒</div>`
-    : '';
+  const { color, icon } = PIN_STYLES[property.category] ?? PIN_STYLES.altri;
 
   const html = `
-    <div class="relative flex items-center justify-center domina-marker-pin ${selectedClass}" style="width: 32px; height: 42px;">
-      ${ringHtml}
-      ${adminLockBadge}
-      <svg viewBox="0 0 32 42" fill="none" class="w-full h-full drop-shadow-md">
-        <path
-          d="M16 0C7.163 0 0 7.163 0 16C0 27.2 14.2 40.8 14.8 41.4C15.4 42 16.6 42 17.2 41.4C17.8 40.8 32 27.2 32 16C32 7.163 24.837 0 16 0Z"
-          fill="${pinColor}"
-          stroke="#ffffff"
-          stroke-width="1.5"
-        />
-        <circle cx="16" cy="16" r="10.5" fill="${pinColor}" />
+    <div class="domina-pin ${isSelected ? 'domina-pin-selected' : ''}">
+      <svg viewBox="0 0 36 46" aria-hidden="true">
+        <path class="domina-pin-body" d="M18 1C8.6 1 1 8.6 1 18c0 12 14.6 25.4 15.8 26.5a1.8 1.8 0 0 0 2.4 0C20.4 43.4 35 30 35 18 35 8.6 27.4 1 18 1Z" />
+        <circle cx="18" cy="18" r="13.5" fill="${color}" />
+        <svg x="9" y="9" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="${icon}" />
+        </svg>
       </svg>
-      <div class="absolute top-[8px] left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none">
-        ${innerIconSvg}
-      </div>
+      ${isAdminHidden ? `<span class="domina-pin-lock">${LOCK_ICON}</span>` : ''}
     </div>
   `;
 
   return L.divIcon({
-    html: html,
+    html,
     className: 'domina-custom-teardrop-marker',
-    iconSize: [32, 42],
-    iconAnchor: [16, 40],
-    popupAnchor: [0, -40],
+    iconSize: [36, 46],
+    iconAnchor: [18, 45],
   });
 }
 
 /**
- * Creates the round circular cluster badge with the number of hidden locations.
- * Clicking this triggers the "Sblocca opportunità riservate" email modal.
+ * Etichetta con il numero di immobili riservati: al clic apre il modulo di sblocco.
  */
-function createLockedClusterIcon(count: number): L.DivIcon {
+function createReservedIcon(count: number): L.DivIcon {
   const html = `
-    <div class="relative flex items-center justify-center cursor-pointer transform hover:scale-110 transition-transform" style="width: 52px; height: 52px;">
-      <!-- Glowing pulse ring -->
-      <div class="absolute inset-0 rounded-full bg-amber-500 opacity-25 animate-ping"></div>
-      
-      <!-- Outer circle -->
-      <div class="relative w-12 h-12 rounded-full bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-400 border-2 border-white shadow-xl flex flex-col items-center justify-center text-white">
-        <div class="text-[9px] font-black uppercase tracking-tighter opacity-90 leading-none">RISERVATE</div>
-        <div class="text-sm font-black leading-none mt-0.5">${count}</div>
-      </div>
-
-      <!-- Lock badge -->
-      <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-slate-900 border border-white text-white flex items-center justify-center text-[10px] shadow-sm">
-        🔒
-      </div>
+    <div class="domina-locked-pill">
+      <span class="domina-locked-pill-icon">${LOCK_ICON}</span>
+      <span>${count} ${count === 1 ? 'riservato' : 'riservati'}</span>
     </div>
   `;
 
   return L.divIcon({
-    html: html,
+    html,
     className: 'domina-locked-cluster-icon',
-    iconSize: [52, 52],
-    iconAnchor: [26, 26],
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
   });
 }

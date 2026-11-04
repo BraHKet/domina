@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
+  ExternalLink,
   Eye,
   EyeOff,
   FileCheck2,
@@ -139,10 +140,22 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
 
   return (
     <>
-      <button type="button" onClick={onBack} className="domina-back-button" aria-label="Torna alla vista precedente">
-        <ArrowLeft className="w-4 h-4" />
-        <span>Indietro</span>
-      </button>
+      <div className="domina-focus-actions">
+        <button type="button" onClick={onBack} className="domina-floating-button" aria-label="Torna alla vista precedente">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Indietro</span>
+        </button>
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${property.coordinates[0]},${property.coordinates[1]}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="domina-floating-button"
+          aria-label="Apri in Google Maps, in una nuova scheda"
+        >
+          <span>Google Maps</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </div>
 
       {/* SCHEDA SINISTRA: immagine, pianta del lotto e variabili */}
       <aside className="domina-panel domina-panel-left" data-open={leftOpen} aria-label="Simulazione del lotto">
@@ -151,7 +164,7 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
             <img src={property.image} alt={property.name} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
             {isAdmin && (
-              <div className="absolute top-3 right-3 flex items-center gap-1.5">
+              <div className="absolute top-14 right-3 flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => onEditProperty(property)}
