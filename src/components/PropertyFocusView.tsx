@@ -1,6 +1,5 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
 import {
-  Activity,
   AlertTriangle,
   ArrowLeft,
   ChevronLeft,
@@ -448,12 +447,6 @@ const ResultsPanel: React.FC<{
   zona: string;
   percInZona: number;
 }> = ({ property, result, isAttivo, existing, zona, percInZona }) => {
-  const [showHealth, setShowHealth] = useState(false);
-
-  if (showHealth) {
-    return <HealthView property={property} onBack={() => setShowHealth(false)} />;
-  }
-
   const d = result.status === 'valid' ? result.demolizione : undefined;
   const m = result.status === 'valid' ? result.mantenimento : undefined;
   const config = result.zonaConfig;
@@ -477,16 +470,6 @@ const ResultsPanel: React.FC<{
           <span className={isAttivo ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}>
             {isAttivo ? 'Attivo' : 'Dismesso'}
           </span>
-          {isAttivo && (
-            <button
-              type="button"
-              onClick={() => setShowHealth(true)}
-              className="inline-flex items-center gap-1 font-semibold text-[#0d6e5a] hover:underline"
-            >
-              <Activity className="w-3 h-3" />
-              Salute attività
-            </button>
-          )}
         </div>
       </div>
 
@@ -622,63 +605,6 @@ const ResultsPanel: React.FC<{
           <Info className="w-3 h-3 flex-none mt-px" />
           <span>Simulazione preliminare: non sostituisce la verifica del tecnico e degli strumenti urbanistici vigenti.</span>
         </p>
-      </div>
-    </>
-  );
-};
-
-const HealthView: React.FC<{ property: Property; onBack: () => void }> = ({ property, onBack }) => {
-  const health = property.businessHealth;
-  const trend = health?.revenueTrend || [
-    { year: '2023', revenue: 950000, margin: 14 },
-    { year: '2024', revenue: 990000, margin: 15 },
-    { year: '2025', revenue: 1040000, margin: 16 },
-  ];
-  const maxRevenue = Math.max(...trend.map((item) => item.revenue), 1000);
-
-  return (
-    <>
-      <div className="flex-none px-3.5 py-3 border-b border-slate-100">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-[#0d6e5a]"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Torna agli indici
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3.5 space-y-4">
-        <h2 className="text-[15px] font-bold text-slate-900">Salute dell'attività</h2>
-        <section className="space-y-2.5">
-          <h3 className="domina-section-title">Fatturato e margine, ultimi 3 anni</h3>
-          {trend.map((item) => (
-            <div key={item.year}>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-slate-600">{item.year}</span>
-                <span className="font-bold text-slate-900">
-                  € {item.revenue.toLocaleString('it-IT')}{' '}
-                  <span className={item.margin >= 0 ? 'text-emerald-700' : 'text-rose-700'}>
-                    {item.margin >= 0 ? `+${item.margin}%` : `${item.margin}%`}
-                  </span>
-                </span>
-              </div>
-              <div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#0d6e5a]"
-                  style={{ width: `${Math.round((item.revenue / maxRevenue) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </section>
-        <section className="space-y-1">
-          <h3 className="domina-section-title">Descrizione</h3>
-          <p className="text-xs leading-relaxed text-slate-700">
-            {health?.activityDescription ||
-              'Attività commerciale in regolare esercizio con clientela fidelizzata, fatturato in crescita e canone sostenibile.'}
-          </p>
-        </section>
       </div>
     </>
   );
