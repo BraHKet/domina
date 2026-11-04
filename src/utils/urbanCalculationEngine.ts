@@ -68,7 +68,7 @@ export interface DemolizioneResult {
   volFinale?: number; // Volume finale per non commerciali (mc)
   slpMin?: number;
   slpBase?: number;
-  slpProgetto?: number; // SLP finale per commerciale (mq)
+  slpProgetto?: number; // SLP finale: max(SLP esistente, SLP da indice) * k (mq)
 
   // Superfici
   st: number;
@@ -313,17 +313,17 @@ export function calculateUrbanParameters(
   let slpBase: number | undefined;
   let slpProgetto: number | undefined;
 
+  // SLP di progetto per tutte le destinazioni: massimo tra SLP esistente e SLP da indice
+  slpMin = (st * config.indiceTerritorialeMinIt) / config.moltiplicatoreVolume; // St * 0.5 / 3.0
+  slpBase = Math.max(slp, slpMin);
+  slpProgetto = slpBase * k;
+
   if (!isCommerciale) {
-    // Non commerciale
+    // Non commerciale: anche il volume (il commerciale non ha limite di volume)
     volSLP = slp * config.moltiplicatoreVolume; // SLP * 3.0
     volIt = st * config.indiceTerritorialeMinIt; // St * 0.5
     volBase = Math.max(volSLP, volIt);
     volFinale = volBase * k;
-  } else {
-    // Commerciale: nessun volume
-    slpMin = (st * config.indiceTerritorialeMinIt) / config.moltiplicatoreVolume; // St * 0.5 / 3.0
-    slpBase = Math.max(slp, slpMin);
-    slpProgetto = slpBase * k;
   }
 
   // Superfici

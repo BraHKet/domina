@@ -9,6 +9,7 @@ interface HeaderProps {
   leadsCount: number;
   onResetData: () => void;
   onTriggerHiddenLogin: () => void;
+  children?: React.ReactNode;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,14 +20,15 @@ export const Header: React.FC<HeaderProps> = ({
   leadsCount,
   onResetData,
   onTriggerHiddenLogin,
+  children,
 }) => {
   return (
-    <header className="z-30 flex-none bg-[#141f28] text-white px-3 sm:px-6 py-2.5 sm:py-3 border-b border-[#22303e] shadow-sm">
+    <header className="z-30 flex-none bg-[#141f28] text-white px-3 sm:px-5 py-2 border-b border-[#22303e] shadow-sm">
       <div className="flex items-center justify-between gap-2 sm:gap-4">
         {/* Left Side: Brand Logo & Name */}
-        <div className="flex items-center space-x-3 sm:space-x-6">
+        <div className="flex flex-1 min-w-0 items-center gap-3 sm:gap-6">
           <div
-            className="flex items-center space-x-2.5 cursor-pointer select-none"
+            className="flex-none flex items-center space-x-2.5 cursor-pointer select-none"
             onDoubleClick={onTriggerHiddenLogin}
             title="Domina"
           >
@@ -59,9 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-bold text-lg tracking-tight text-white">Domina</span>
           </div>
 
-          <span className="hidden sm:inline text-xs text-slate-400 font-normal tracking-normal border-l border-slate-700/60 pl-6">
-
-          </span>
+          {children}
         </div>
 
         {/* Right Side: ONLY visible when logged in as ADMIN */}

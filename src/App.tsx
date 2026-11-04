@@ -3,7 +3,7 @@ import type { Property, PropertyCategory, LeadSubmission, ClickSource } from './
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { MapView } from './components/MapView';
-import { PropertyCard } from './components/PropertyCard';
+import { PropertyFocusView } from './components/PropertyFocusView';
 import { UnlockModal } from './components/UnlockModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
 import { AdminLeadsModal } from './components/AdminLeadsModal';
@@ -27,10 +27,8 @@ import {
 export const App: React.FC = () => {
   // Properties state
   const [properties, setProperties] = useState<Property[]>(() => getStoredProperties());
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(() => {
-    const list = getStoredProperties();
-    return list[0] || null;
-  });
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [hasSelectedOnce, setHasSelectedOnce] = useState(false);
 
   // Search & Category Filters
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -85,10 +83,10 @@ export const App: React.FC = () => {
           if (isMounted && remoteProps !== null) {
             setProperties(remoteProps);
             saveStoredProperties(remoteProps);
-            setSelectedProperty((prev) => {
-              if (!prev) return remoteProps[0] || null;
-              return remoteProps.find((p) => p.id === prev.id) || remoteProps[0] || null;
-            });
+            // Aggiorna solo l'immobile già aperto: la sincronizzazione non deve mai muovere la mappa
+            setSelectedProperty((prev) =>
+              prev ? remoteProps.find((p) => p.id === prev.id) || null : null
+            );
           }
         })
         .catch((err) => {
@@ -199,6 +197,7 @@ export const App: React.FC = () => {
   const handleSaveProperty = (savedProp: Property) => {
     const updatedList = saveProperty(savedProp, properties);
     setProperties(updatedList);
+    setHasSelectedOnce(true);
     setSelectedProperty(savedProp);
   };
 
@@ -208,7 +207,7 @@ export const App: React.FC = () => {
     const updatedList = deleteProperty(id, properties, target);
     setProperties(updatedList);
     if (selectedProperty?.id === id) {
-      setSelectedProperty(updatedList[0] || null);
+      setSelectedProperty(null);
     }
   };
 
@@ -226,7 +225,7 @@ export const App: React.FC = () => {
     if (confirm('Vuoi ripristinare il dataset predefinito iniziale?')) {
       const reset = resetStoredProperties();
       setProperties(reset);
-      setSelectedProperty(reset[0] || null);
+      setSelectedProperty(null);
     }
   };
 
@@ -276,8 +275,10 @@ export const App: React.FC = () => {
     setUnlockModalOpen(true);
   }, []);
 
+  // Un secondo clic sullo stesso pin torna alla vista precedente
   const handleSelectProperty = useCallback((property: Property) => {
-    setSelectedProperty(property);
+    setHasSelectedOnce(true);
+    setSelectedProperty((prev) => (prev?.id === property.id ? null : property));
   }, []);
 
   const handleCloseCard = useCallback(() => {
@@ -290,7 +291,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#f8fafc] text-gray-800 overflow-hidden font-sans">
+    <div className="flex flex-col h-screen w-screen bg-slate-900 text-gray-800 overflow-hidden font-sans">
       {/* 1. Top Dark Navbar with Hidden Admin Access */}
       <Header
         isAdmin={isAdmin}
@@ -303,23 +304,22 @@ export const App: React.FC = () => {
         leadsCount={leads.length}
         onResetData={handleResetData}
         onTriggerHiddenLogin={() => setAdminLoginOpen(true)}
-      />
+      >
+        <FilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          totalCount={isAdmin ? properties.length : userVisibleCount}
+          filteredCount={
+            isAdmin
+              ? filteredProperties.length
+              : filteredProperties.filter((p) => p.isVisibleToUser !== false).length
+          }
+        />
+      </Header>
 
-      {/* 2. White Search & Filter Bar */}
-      <FilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        totalCount={isAdmin ? properties.length : userVisibleCount}
-        filteredCount={
-          isAdmin
-            ? filteredProperties.length
-            : filteredProperties.filter((p) => p.isVisibleToUser !== false).length
-        }
-      />
-
-      {/* 3. Main Map & Floating Right Card */}
+      {/* Mappa a tutto schermo con le schede dell'immobile sopra */}
       <main className="relative flex-1 w-full h-full overflow-hidden">
         {/* Full-screen Leaflet Map */}
         <MapView
@@ -331,12 +331,16 @@ export const App: React.FC = () => {
           onMapClickAddLocation={handleMapClickAddLocation}
         />
 
-        {/* Floating Right Detail Card */}
+        {!selectedProperty && !hasSelectedOnce && (
+          <p className="domina-map-hint">Clicca un pin per scoprire cosa puoi costruire</p>
+        )}
+
         {selectedProperty && (
-          <PropertyCard
+          <PropertyFocusView
+            key={selectedProperty.id}
             property={selectedProperty}
             isAdmin={isAdmin}
-            onClose={handleCloseCard}
+            onBack={handleCloseCard}
             onRequestAction={handleCardRequestAction}
             onEditProperty={(prop) => {
               setEditingProperty(prop);

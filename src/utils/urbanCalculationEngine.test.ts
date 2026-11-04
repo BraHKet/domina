@@ -198,4 +198,31 @@ console.log('\n--- TEST 7: Modalità mantenimento ---');
   assertStrict(res.mantenimento?.sco, 650, 'Sco 650');
 }
 
-console.log('\nTUTTI I 7 TEST SONO STATI SUPERATI CON SUCCESSO! 🎉');
+console.log('\n--- TEST 8: Demolizione, SLP = massimo tra esistente e da indice, per ogni destinazione ---');
+{
+  const lot = (slp: number) => ({ zona: 'C1', comune: 'Padova', perc_in_zona: 100, st: 5000, slp });
+
+  // SLP esistente più piccola: vince la SLP da indice (5.000 * 0,5 / 3 = 833,33)
+  const piccola = calculateUrbanParameters(lot(100), { destinazione: 'residenziale', modalita: 'demolizione' }).demolizione!;
+  assertApprox(piccola.slpBase, 833.33, 0.05, 'Residenziale: vince la SLP da indice');
+  assertApprox(piccola.volFinale, 2500, 0.01, 'Residenziale: volume invariato');
+
+  // SLP esistente più grande: resta la SLP esistente
+  const grande = calculateUrbanParameters(lot(2000), { destinazione: 'direzionale', modalita: 'demolizione' }).demolizione!;
+  assertApprox(grande.slpBase, 2000, 0.01, 'Direzionale: vince la SLP esistente');
+  assertApprox(grande.volFinale, 6000, 0.01, 'Direzionale: volume invariato');
+
+  // Le premialità si applicano anche alla SLP
+  const conBonus = calculateUrbanParameters(lot(100), {
+    destinazione: 'residenziale',
+    modalita: 'demolizione',
+    premialita: { recredOrErs: true },
+  }).demolizione!;
+  assertApprox(conBonus.slpProgetto, 1083.33, 0.05, 'Residenziale: SLP con premialità +30%');
+
+  const commerciale = calculateUrbanParameters(lot(2000), { destinazione: 'commerciale', modalita: 'demolizione', sv: 800 }).demolizione!;
+  assertApprox(commerciale.slpProgetto, 2000, 0.01, 'Commerciale: vince la SLP esistente');
+  assertStrict(commerciale.volFinale, undefined, 'Commerciale: nessun volume');
+}
+
+console.log('\nTUTTI GLI 8 TEST SONO STATI SUPERATI CON SUCCESSO! 🎉');

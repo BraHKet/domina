@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import type { Property } from '../types/property';
+import { calculateUrbanParameters } from '../utils/urbanCalculationEngine';
+import { formatNumber, getLotData } from '../utils/urbanLot';
 
 interface MapViewProps {
   properties: Property[];
@@ -13,6 +15,12 @@ interface MapViewProps {
 
 const PADOVA_CENTER: [number, number] = [45.4075, 11.879];
 const INITIAL_ZOOM = 13;
+const FOCUS_ZOOM = 18;
+const HOVER_CARD_HEIGHT = 240;
+const ESRI_SATELLITE_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const ESRI_ATTRIBUTION =
+  'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
 
 export const MapView: React.FC<MapViewProps> = ({
   properties,
@@ -26,6 +34,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const clusterMarkerRef = useRef<L.Marker | null>(null);
+  const previousViewRef = useRef<{ center: L.LatLng; zoom: number } | null>(null);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -41,24 +50,13 @@ export const MapView: React.FC<MapViewProps> = ({
     // Zoom controls at bottom-left
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-    // Clean OpenStreetMap tiles (free, reliable, no watermark)
-    // Supports custom API key via VITE_MAP_API_KEY or custom URL via VITE_MAP_TILE_URL
-    const apiKey = import.meta.env.VITE_MAP_API_KEY;
+    // Sfondo satellitare Esri, senza chiave. VITE_MAP_TILE_URL permette di sostituirlo.
     const customTileUrl = import.meta.env.VITE_MAP_TILE_URL;
 
-    let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-
-    if (customTileUrl) {
-      tileUrl = customTileUrl;
-    } else if (apiKey) {
-      tileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${apiKey}`;
-      attribution = '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-    }
-
-    L.tileLayer(tileUrl, {
-      maxZoom: 19,
-      attribution: attribution,
+    L.tileLayer(customTileUrl || ESRI_SATELLITE_URL, {
+      maxNativeZoom: 19,
+      maxZoom: 20,
+      attribution: customTileUrl ? '' : ESRI_ATTRIBUTION,
     }).addTo(map);
 
     // Admin map click to add location
@@ -105,7 +103,6 @@ export const MapView: React.FC<MapViewProps> = ({
 
       const marker = L.marker(prop.coordinates, {
         icon: icon,
-        title: prop.name,
         zIndexOffset: isSelected ? 1000 : 100,
       });
 
@@ -113,7 +110,23 @@ export const MapView: React.FC<MapViewProps> = ({
         onSelectProperty(prop);
       });
 
+      if (!isSelected) {
+        // Va registrato prima del tooltip: decide il lato giusto prima che si apra
+        marker.on('mouseover', () => {
+          const tooltip = marker.getTooltip();
+          if (!tooltip) return;
+          const roomAbove = map.latLngToContainerPoint(marker.getLatLng()).y > HOVER_CARD_HEIGHT;
+          tooltip.options.direction = roomAbove ? 'top' : 'bottom';
+          tooltip.options.offset = roomAbove ? [0, -42] : [0, 4];
+        });
+        marker.bindTooltip(() => createHoverCard(prop), {
+          className: 'domina-hover-card',
+          opacity: 1,
+        });
+      }
+
       marker.addTo(map);
+      marker.getElement()?.setAttribute('aria-label', prop.name);
       markersRef.current[prop.id] = marker;
     });
 
@@ -145,23 +158,87 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   }, [properties, selectedProperty, isAdmin, onSelectProperty, onOpenUnlockModal]);
 
-  // Center when selected
+  // Lo zoom automatico avviene solo entrando e uscendo da un immobile: nella vista
+  // con tutti i pin l'utente decide liberamente zoom e posizione.
+  const selectedId = selectedProperty?.id ?? null;
+  const selectedCoordinates = selectedProperty?.coordinates;
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !selectedProperty) return;
+    if (!map) return;
+    const animate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    map.flyTo(selectedProperty.coordinates, 14, {
-      duration: 0.8,
-      easeLinearity: 0.25,
-    });
-  }, [selectedProperty]);
+    if (selectedId && selectedCoordinates) {
+      // Passando da un pin all'altro resta valida la vista di partenza
+      previousViewRef.current ??= { center: map.getCenter(), zoom: map.getZoom() };
+      map.flyTo(selectedCoordinates, FOCUS_ZOOM, { animate, duration: 1 });
+    } else if (previousViewRef.current) {
+      const { center, zoom } = previousViewRef.current;
+      previousViewRef.current = null;
+      map.flyTo(center, zoom, { animate, duration: 0.8 });
+    }
+    // Deve scattare solo al cambio di immobile, non a ogni sincronizzazione dei dati
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#eef2f5]">
+    <div className="relative w-full h-full overflow-hidden bg-slate-900">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
     </div>
   );
 };
+
+/**
+ * Piccola scheda mostrata al passaggio del mouse: immagine, nome e indici calcolati.
+ * Costruita con textContent perché i testi arrivano dal database.
+ */
+function createHoverCard(property: Property): HTMLElement {
+  const card = document.createElement('div');
+
+  const image = document.createElement('img');
+  image.src = property.image;
+  image.alt = '';
+  image.onerror = () => image.remove();
+  card.appendChild(image);
+
+  const body = document.createElement('div');
+  body.className = 'domina-hover-card-body';
+  card.appendChild(body);
+
+  const title = document.createElement('strong');
+  title.textContent = property.name;
+  body.appendChild(title);
+
+  const { status, demolizione: d } = calculateUrbanParameters(getLotData(property), {
+    destinazione: 'residenziale',
+    modalita: 'demolizione',
+  });
+
+  if (status === 'valid' && d) {
+    const metrics: [string, string][] = [
+      ['Volume', `${formatNumber(d.volFinale)} m³`],
+      ['SLP max', `${formatNumber(d.slpProgetto)} m²`],
+      ['Coperto max', `${formatNumber(d.covMax)} m²`],
+      ['Verde min', `${formatNumber(d.permMin)} m²`],
+    ];
+    const grid = document.createElement('dl');
+    metrics.forEach(([label, value]) => {
+      const row = document.createElement('div');
+      const term = document.createElement('dt');
+      term.textContent = label;
+      const definition = document.createElement('dd');
+      definition.textContent = value;
+      row.append(term, definition);
+      grid.appendChild(row);
+    });
+    body.appendChild(grid);
+  } else {
+    const note = document.createElement('p');
+    note.textContent = 'Indici non disponibili';
+    body.appendChild(note);
+  }
+
+  return card;
+}
 
 /**
  * Creates the exact teardrop pin matching the reference screenshot.
@@ -192,7 +269,7 @@ function createTeardropMarkerIcon(
 
   const selectedClass = isSelected ? 'domina-marker-selected' : '';
   const ringHtml = isSelected
-    ? `<div class="absolute -inset-1 rounded-full border-2 border-[#0d6e5a] animate-ping opacity-60"></div>`
+    ? `<div class="absolute -inset-1 rounded-full border-2 border-white animate-ping opacity-80"></div>`
     : '';
 
   const adminLockBadge = isAdminHidden
@@ -207,6 +284,8 @@ function createTeardropMarkerIcon(
         <path
           d="M16 0C7.163 0 0 7.163 0 16C0 27.2 14.2 40.8 14.8 41.4C15.4 42 16.6 42 17.2 41.4C17.8 40.8 32 27.2 32 16C32 7.163 24.837 0 16 0Z"
           fill="${pinColor}"
+          stroke="#ffffff"
+          stroke-width="1.5"
         />
         <circle cx="16" cy="16" r="10.5" fill="${pinColor}" />
       </svg>

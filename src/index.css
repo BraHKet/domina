@@ -50,14 +50,33 @@
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background: #f8fafc !important;
+  background: #0f172a !important;
   font-family: inherit !important;
 }
 
 /* Zoom controls positioned bottom-left */
 .leaflet-bottom.leaflet-left {
-  margin-bottom: 24px;
-  margin-left: 20px;
+  margin-bottom: 16px;
+  margin-left: 16px;
+  transition: margin 0.28s ease;
+}
+
+.leaflet-bottom.leaflet-right {
+  transition: margin 0.28s ease;
+}
+
+/* Lo zoom resta sopra ai tre bottoni della vista immobile */
+main:has(.domina-action-bar) .leaflet-bottom.leaflet-left {
+  margin-bottom: 64px;
+}
+
+/* I controlli della mappa e i crediti restano visibili accanto alle schede aperte */
+main:has(.domina-panel-left[data-open="true"]) .leaflet-bottom.leaflet-left {
+  margin-left: calc(var(--panel-width) + 24px);
+}
+
+main:has(.domina-panel-right[data-open="true"]) .leaflet-bottom.leaflet-right {
+  margin-right: calc(var(--panel-width) + 12px);
 }
 
 .leaflet-control-zoom {
@@ -89,15 +108,15 @@
 }
 
 .leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.7) !important;
-  color: #94a3b8 !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: #475569 !important;
   font-size: 9px !important;
   backdrop-filter: blur(4px);
   padding: 2px 6px !important;
 }
 
 .leaflet-control-attribution a {
-  color: #64748b !important;
+  color: #334155 !important;
 }
 
 /* Custom SVG Marker pin */
@@ -114,4 +133,361 @@
 .domina-marker-selected {
   transform: scale(1.18) translateY(-4px);
   z-index: 1001 !important;
+}
+
+/* Scheda temporanea al passaggio del mouse su un pin */
+.leaflet-tooltip.domina-hover-card {
+  width: 230px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #0f172a;
+  white-space: normal;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+  font-family: inherit;
+}
+
+.leaflet-tooltip.domina-hover-card::before {
+  display: none;
+}
+
+.domina-hover-card img {
+  display: block;
+  width: 100%;
+  height: 104px;
+  object-fit: cover;
+  background: #e2e8f0;
+}
+
+.domina-hover-card-body {
+  padding: 8px 10px 10px;
+}
+
+.domina-hover-card-body strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.domina-hover-card-body p {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.domina-hover-card-body dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+  margin: 7px 0 0;
+}
+
+.domina-hover-card-body dt {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.domina-hover-card-body dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Vista immobile: schede staccate da header e bordi, mappa visibile al centro */
+main {
+  --panel-width: 348px;
+}
+
+.domina-panel {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  width: var(--panel-width);
+  z-index: 20;
+  transition: transform 0.28s ease;
+}
+
+.domina-panel-left {
+  left: 12px;
+}
+
+.domina-panel-right {
+  right: 12px;
+}
+
+.domina-panel-left[data-open="false"] {
+  transform: translateX(calc(-100% - 12px));
+}
+
+.domina-panel-right[data-open="false"] {
+  transform: translateX(calc(100% + 12px));
+}
+
+.domina-panel-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.3);
+}
+
+.domina-panel-handle {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 52px;
+  margin-top: -26px;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+}
+
+.domina-panel-handle:hover {
+  color: #0d6e5a;
+}
+
+.domina-panel-left .domina-panel-handle {
+  left: calc(100% + 8px);
+}
+
+.domina-panel-right .domina-panel-handle {
+  right: calc(100% + 8px);
+}
+
+.domina-back-button {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px 7px 9px;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+.domina-back-button:hover {
+  color: #0d6e5a;
+}
+
+.domina-image-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.domina-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.domina-action-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 25;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.domina-action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.4);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.domina-map-hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 10;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Barre regolabili */
+.domina-range {
+  --accent: #0d6e5a;
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.domina-slider-danger .domina-range {
+  --accent: #be123c;
+}
+
+.domina-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--accent) var(--fill), #e2e8f0 var(--fill));
+}
+
+.domina-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+}
+
+.domina-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+.domina-range::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.4);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.domina-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.4);
+}
+
+.domina-range:focus-visible {
+  outline: 2px solid #0d6e5a;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Schermi stretti: una scheda alla volta, sopra ai bottoni */
+@media (max-width: 1199px) {
+  .domina-panel {
+    top: 60px;
+    bottom: 72px;
+    width: min(calc(100% - 24px), 400px);
+  }
+
+  .domina-panel-left[data-open="true"] .domina-panel-handle {
+    left: calc(100% - 34px);
+  }
+
+  .domina-panel-right[data-open="true"] .domina-panel-handle {
+    right: calc(100% - 34px);
+  }
+
+  /* Con una scheda aperta resta solo il suo pulsante, per non sovrapporli */
+  main:has(.domina-panel[data-open="true"]) .domina-panel[data-open="false"] .domina-panel-handle {
+    display: none;
+  }
+
+  .domina-back-button {
+    top: 14px;
+    left: 12px;
+  }
+
+  .domina-action-bar {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+  }
+
+  .domina-action {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 9px 6px;
+    font-size: 11px;
+    line-height: 1.15;
+    white-space: normal;
+  }
+
+  /* Le schede occupano quasi tutta la larghezza: i controlli restano al loro posto */
+  main:has(.domina-panel-left[data-open="true"]) .leaflet-bottom.leaflet-left {
+    margin-left: 16px;
+  }
+
+  main:has(.domina-panel-right[data-open="true"]) .leaflet-bottom.leaflet-right {
+    margin-right: 0;
+  }
+
+  main:has(.domina-action-bar) .leaflet-bottom {
+    margin-bottom: 64px;
+  }
+
+  /* I crediti della mappa possono andare su due righe: lo zoom resta sopra */
+  .leaflet-bottom.leaflet-left {
+    margin-bottom: 48px;
+  }
+
+  main:has(.domina-action-bar) .leaflet-bottom.leaflet-left {
+    margin-bottom: 112px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .domina-panel,
+  .leaflet-bottom.leaflet-left,
+  .leaflet-bottom.leaflet-right {
+    transition: none;
+  }
 }
