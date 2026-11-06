@@ -283,7 +283,7 @@ main:has(.domina-panel-right[data-open="true"]) .leaflet-bottom.leaflet-right {
 
 /* Vista immobile: schede staccate da header e bordi, mappa visibile al centro */
 main {
-  --panel-width: 348px;
+  --panel-width: 380px;
 }
 
 .domina-panel {
@@ -392,9 +392,42 @@ main {
 }
 
 .domina-section-title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #0f172a;
+}
+
+/* Sezioni apribili: i dettagli tecnici restano chiusi finché non servono */
+.domina-details {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+}
+
+.domina-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  list-style: none;
+}
+
+.domina-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.domina-details > summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.domina-details[open] > summary::after {
+  content: '−';
 }
 
 .domina-action-bar {
@@ -481,6 +514,140 @@ main {
     align-items: stretch;
     bottom: 12px;
   }
+}
+
+/* Ricerca iniziale: schermata nera sopra la mappa */
+.domina-search-landing {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(2, 6, 23, 0.94);
+  backdrop-filter: blur(6px);
+}
+
+.domina-search-card {
+  width: min(640px, 100%);
+}
+
+.domina-search-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.domina-search-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #0f172a;
+}
+
+.domina-search-input:focus-within {
+  border-color: #14b8a6;
+}
+
+.domina-search-input input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  outline: none;
+}
+
+.domina-search-input span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.domina-search-chip {
+  padding: 10px 8px;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.domina-search-chip:hover {
+  border-color: #64748b;
+}
+
+.domina-search-chip[aria-pressed='true'] {
+  border-color: #14b8a6;
+  background: rgba(20, 184, 166, 0.15);
+  color: #ffffff;
+}
+
+.domina-search-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 28px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #0d9488;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.domina-search-submit:hover {
+  background: #0f766e;
+}
+
+.domina-search-submit:disabled {
+  background: #1e293b;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.domina-search-pill {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 6px 6px 6px 14px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.domina-search-pill-button {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.domina-search-pill-button:hover {
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .domina-map-hint {

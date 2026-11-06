@@ -12,6 +12,9 @@ import { FilterBar } from './components/FilterBar';
 import { MapView, type ParcelPickingState } from './components/MapView';
 import { ParcelPickerBar } from './components/ParcelPickerBar';
 import { buildLotBoundary, fetchParcelAt } from './utils/cadastre';
+import { SearchLanding } from './components/SearchLanding';
+import { EMPTY_CRITERIA, findScenario, matchesCriteria, type SearchCriteria } from './utils/searchCriteria';
+import { formatNumber } from './utils/urbanLot';
 import { PropertyFocusView } from './components/PropertyFocusView';
 import { UnlockModal } from './components/UnlockModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
@@ -45,6 +48,11 @@ export const App: React.FC = () => {
 
   // Hidden Admin State
   const [isAdmin, setIsAdmin] = useState<boolean>(() => getStoredAdminAuth());
+
+  // Ricerca iniziale: cosa vuole costruire il costruttore (l'Admin la salta)
+  // Si apre solo con il pulsante con la lente
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchCriteria, setSearchCriteria] = useState<SearchCriteria | null>(null);
   const [adminLoginOpen, setAdminLoginOpen] = useState<boolean>(false);
 
   // Leads
@@ -192,6 +200,10 @@ export const App: React.FC = () => {
         return false;
       }
 
+      if (searchCriteria && !matchesCriteria(prop, searchCriteria)) {
+        return false;
+      }
+
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
         const matchesName = prop.name.toLowerCase().includes(q);
@@ -204,7 +216,13 @@ export const App: React.FC = () => {
 
       return true;
     });
-  }, [properties, selectedCategory, searchQuery]);
+  }, [properties, selectedCategory, searchQuery, searchCriteria]);
+
+  // La scheda si apre con le scelte che soddisfano la ricerca (coperto e tetto verde)
+  const selectedScenario = useMemo(
+    () => (selectedProperty && searchCriteria ? findScenario(selectedProperty, searchCriteria) : null),
+    [selectedProperty, searchCriteria]
+  );
 
   // Count of properties visible to regular user
   const userVisibleCount = useMemo(() => {
@@ -388,6 +406,8 @@ export const App: React.FC = () => {
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           totalCount={isAdmin ? properties.length : userVisibleCount}
+          onOpenSearch={() => setSearchOpen(true)}
+          searchActive={searchCriteria !== null}
           filteredCount={
             isAdmin
               ? filteredProperties.length
@@ -409,8 +429,41 @@ export const App: React.FC = () => {
           parcelPicking={parcelPicking}
         />
 
-        {!selectedProperty && !hasSelectedOnce && !parcelPicker && (
+        {!selectedProperty && !hasSelectedOnce && !parcelPicker && !searchCriteria && (
           <p className="domina-map-hint">Clicca un pin per scoprire cosa puoi costruire</p>
+        )}
+
+        {!selectedProperty && !parcelPicker && searchCriteria && (
+          <div className="domina-search-pill">
+            <span className="truncate">{describeCriteria(searchCriteria)}</span>
+            <button type="button" onClick={() => setSearchOpen(true)} className="domina-search-pill-button">
+              Modifica
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchCriteria(null)}
+              className="domina-search-pill-button"
+              aria-label="Togli la ricerca e mostra tutti gli immobili"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {searchOpen && (
+          <SearchLanding
+            properties={properties}
+            initialCriteria={searchCriteria ?? EMPTY_CRITERIA}
+            onSubmit={(criteria) => {
+              setSearchCriteria(criteria);
+              setSearchOpen(false);
+            }}
+            onSkip={() => {
+              setSearchCriteria(null);
+              setSearchOpen(false);
+            }}
+            onClose={() => setSearchOpen(false)}
+          />
         )}
 
         {parcelPicker && (
@@ -435,6 +488,8 @@ export const App: React.FC = () => {
               setAdminPropModalOpen(true);
             }}
             onToggleVisibility={handleToggleVisibility}
+            initialDestinazione={searchCriteria?.destinazione}
+            initialScenario={selectedScenario}
           />
         )}
       </main>
@@ -481,5 +536,20 @@ export const App: React.FC = () => {
     </div>
   );
 };
+
+const DESTINAZIONE_LABELS: Record<SearchCriteria['destinazione'], string> = {
+  commerciale: 'Commerciale',
+  residenziale: 'Residenziale',
+  direzionale: 'Direzionale',
+  turistico_ricettiva: 'Turistico',
+};
+
+/** "Commerciale · coperto 1500 m² · parcheggi 2000 m²" */
+function describeCriteria(criteria: SearchCriteria): string {
+  const parts = [DESTINAZIONE_LABELS[criteria.destinazione]];
+  if (criteria.coperto) parts.push(`coperto ${formatNumber(criteria.coperto)} m²`);
+  if (criteria.parcheggi) parts.push(`parcheggi ${formatNumber(criteria.parcheggi)} m²`);
+  return parts.join(' · ');
+}
 
 export default App;

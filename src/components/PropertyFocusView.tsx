@@ -23,8 +23,9 @@ import {
   type UrbanCalculationOutput,
 } from '../utils/urbanCalculationEngine.ts';
 import { formatParcelList } from '../utils/cadastre';
+import type { MatchScenario } from '../utils/searchCriteria';
 import { formatNumber, getLotData } from '../utils/urbanLot.ts';
-import { DemolitionPlan, ExistingPlan } from './LotPlan.tsx';
+import { DemolitionLegend, Existing3DPlan, Lot3DPlan } from './Lot3D.tsx';
 
 type ActionType = 'analisi' | 'target' | 'proprietario';
 
@@ -35,6 +36,8 @@ interface PropertyFocusViewProps {
   onRequestAction: (actionType: ActionType, property: Property) => void;
   onEditProperty: (property: Property) => void;
   onToggleVisibility: (property: Property) => void;
+  initialDestinazione?: DestinazioneUso;
+  initialScenario?: MatchScenario | null;
 }
 
 const NARROW_QUERY = '(max-width: 1199px)';
@@ -70,6 +73,8 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
   onRequestAction,
   onEditProperty,
   onToggleVisibility,
+  initialDestinazione,
+  initialScenario,
 }) => {
   const isNarrow = useIsNarrow();
   const [leftOpen, setLeftOpen] = useState(!isNarrow);
@@ -94,11 +99,12 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
 
   // Parametri della simulazione: scelti dall'utente, mai salvati sul lotto
   const lotData = useMemo(() => getLotData(property), [property]);
-  const [destinazione, setDestinazione] = useState<DestinazioneUso>('residenziale');
+  // Se il costruttore ha fatto una ricerca, la scheda parte da quello che cercava
+  const [destinazione, setDestinazione] = useState<DestinazioneUso>(initialDestinazione ?? 'residenziale');
   const [modalita, setModalita] = useState<ModalitaIntervento>('demolizione');
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
-  const [covScelta, setCovScelta] = useState<number | null>(null);
-  const [tv, setTv] = useState(0);
+  const [covScelta, setCovScelta] = useState<number | null>(initialScenario?.covScelta ?? null);
+  const [tv, setTv] = useState(initialScenario?.tv ?? 0);
   const [sv, setSv] = useState(DEFAULT_SV);
   const [premialita, setPremialita] = useState<PremialitaSelections>({});
 
@@ -160,9 +166,9 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
       {/* SCHEDA SINISTRA: immagine, pianta del lotto e variabili */}
       <aside className="domina-panel domina-panel-left" data-open={leftOpen} aria-label="Simulazione del lotto">
         <div className="domina-panel-card" inert={!leftOpen}>
-          <div className="relative h-32 flex-none bg-slate-200">
+          <div className="relative h-52 flex-none bg-slate-200">
             <img src={property.image} alt={property.name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
             {isAdmin && (
               <div className="absolute top-14 right-3 flex items-center gap-1.5">
                 <button
@@ -185,17 +191,17 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
                 </button>
               </div>
             )}
-            <div className="absolute left-3.5 right-3.5 bottom-2.5 text-white">
-              <h2 className="text-[15px] font-bold leading-tight truncate">{property.name}</h2>
-              <p className="mt-0.5 text-[11px] text-white/85 flex items-center gap-1">
-                <MapPin className="w-3 h-3 flex-none" />
+            <div className="absolute left-4 right-4 bottom-3 text-white">
+              <h2 className="text-lg font-bold leading-tight truncate">{property.name}</h2>
+              <p className="mt-0.5 text-[13px] text-white flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 flex-none" />
                 <span className="truncate">{property.address}</span>
               </p>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-4">
-            <div className="space-y-2">
+          <div className="flex-1 overflow-y-auto p-4 space-y-5">
+            <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-slate-100" role="group" aria-label="Tipo di intervento">
                 {(
                   [
@@ -208,20 +214,20 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
                     type="button"
                     aria-pressed={modalita === value}
                     onClick={() => setModalita(value)}
-                    className={`px-1.5 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${
-                      modalita === value ? 'bg-white text-[#0d6e5a] shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    className={`px-1.5 py-2 rounded-md text-xs font-semibold transition-colors ${
+                      modalita === value ? 'bg-white text-[#0d6e5a] shadow-sm' : 'text-slate-700 hover:text-slate-900'
                     }`}
                   >
                     {label}
                   </button>
                 ))}
               </div>
-              <label className="flex items-center justify-between gap-3 text-xs text-slate-600">
-                <span className="font-medium">Destinazione</span>
+              <label className="flex items-center justify-between gap-3 text-[13px] text-slate-800">
+                <span className="font-semibold">Destinazione</span>
                 <select
                   value={destinazione}
                   onChange={(e) => setDestinazione(e.target.value as DestinazioneUso)}
-                  className="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#0d6e5a]"
+                  className="flex-1 min-w-0 px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-[13px] font-semibold text-slate-900 focus:outline-none focus:border-[#0d6e5a]"
                 >
                   {DESTINAZIONI.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -233,15 +239,18 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
             </div>
 
             {(demolizione || mantenimento) && (
-              <section className="space-y-2">
+              // Resta in vista mentre si scorre fino alle barre: si vede subito l'effetto
+              <section className="sticky -top-4 z-10 -mx-4 px-4 pt-3 pb-3 bg-white border-b border-slate-200 space-y-2">
                 <div className="flex items-baseline justify-between">
                   <h3 className="domina-section-title">{demolizione ? 'Cosa puoi costruire' : 'Cosa c’è oggi'}</h3>
                   {demolizione && (
-                    <span className="text-[11px] text-slate-500">Lotto {formatNumber(demolizione.st)} m²</span>
+                    <span className="text-xs font-medium text-slate-700">Lotto {formatNumber(demolizione.st)} m²</span>
                   )}
                 </div>
-                {demolizione && <DemolitionPlan result={demolizione} />}
-                {mantenimento && <ExistingPlan result={mantenimento} />}
+                {demolizione && (
+                  <Lot3DPlan result={demolizione} outline={property.lotBoundary?.outline ?? null} height={height} />
+                )}
+                {mantenimento && <Existing3DPlan result={mantenimento} outline={property.lotBoundary?.outline ?? null} />}
               </section>
             )}
 
@@ -306,13 +315,21 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
             )}
 
             {demolizione && (
-              <section className="space-y-1.5">
-                <h3 className="domina-section-title">Premialità</h3>
+              <details className="domina-details">
+                <summary>
+                  Premialità
+                  {Object.values(premialita).some(Boolean) && (
+                    <span className="ml-1.5 text-[#0d6e5a]">
+                      ({Object.values(premialita).filter(Boolean).length} attive)
+                    </span>
+                  )}
+                </summary>
+                <div className="pt-1.5 space-y-0.5">
                 {bonusOptions.map((option) => (
                   <label
                     key={option.key}
-                    className={`flex items-center gap-2.5 py-1 text-xs ${
-                      option.enabled ? 'cursor-pointer text-slate-800' : 'text-slate-400 cursor-not-allowed'
+                    className={`flex items-center gap-2.5 py-1 text-[13px] ${
+                      option.enabled ? 'cursor-pointer text-slate-800' : 'text-slate-500 cursor-not-allowed'
                     }`}
                   >
                     <input
@@ -324,12 +341,13 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
                     />
                     <span className="flex-1 min-w-0">
                       {option.label}
-                      {option.hint && <span className="block text-[10px]">{option.hint}</span>}
+                      {option.hint && <span className="block text-[11px]">{option.hint}</span>}
                     </span>
-                    <span className="font-semibold text-[11px] text-slate-500">{option.badge}</span>
+                    <span className="font-semibold text-xs text-slate-700">{option.badge}</span>
                   </label>
                 ))}
-              </section>
+                </div>
+              </details>
             )}
           </div>
         </div>
@@ -344,6 +362,7 @@ export const PropertyFocusView: React.FC<PropertyFocusViewProps> = ({
             result={result}
             isAttivo={isAttivo}
             existing={{ st: lotData.st, slp: lotData.slp, cop: lotData.cop, sco: lotData.sco }}
+            height={height}
             zona={lotData.zona || 'C1'}
             percInZona={lotData.perc_in_zona ?? 100}
           />
@@ -408,10 +427,10 @@ const Slider: React.FC<{
   return (
     <div className={danger ? 'domina-slider-danger' : undefined}>
       <div className="flex items-baseline justify-between mb-1">
-        <label htmlFor={id} className="text-xs font-medium text-slate-700">
+        <label htmlFor={id} className="text-[13px] font-semibold text-slate-800">
           {label}
         </label>
-        <output htmlFor={id} className={`text-xs font-bold ${danger ? 'text-rose-700' : 'text-slate-900'}`}>
+        <output htmlFor={id} className={`text-[13px] font-bold ${danger ? 'text-rose-700' : 'text-slate-900'}`}>
           {shown} {unit}
         </output>
       </div>
@@ -427,16 +446,16 @@ const Slider: React.FC<{
         className="domina-range"
         style={{ '--fill': `${fill}%` } as React.CSSProperties}
       />
-      {hint && <p className={`mt-0.5 text-[11px] ${danger ? 'text-rose-700 font-semibold' : 'text-slate-500'}`}>{hint}</p>}
+      {hint && <p className={`mt-1 text-xs ${danger ? 'text-rose-700 font-semibold' : 'text-slate-600'}`}>{hint}</p>}
     </div>
   );
 };
 
 const Tile: React.FC<{ label: string; value: string; highlighted?: boolean; note?: string }> = ({ label, value, highlighted, note }) => (
-  <div className={`rounded-lg p-2.5 ${highlighted ? 'bg-emerald-50 ring-1 ring-[#0d6e5a]/40' : 'bg-slate-50'}`}>
-    <span className="block text-[11px] text-slate-500 leading-tight">{label}</span>
-    <span className="block mt-0.5 text-sm font-bold text-slate-900">{value}</span>
-    {note && <span className="block text-[10px] font-semibold text-[#0d6e5a]">{note}</span>}
+  <div className={`rounded-lg p-2.5 ${highlighted ? 'bg-emerald-50 ring-1 ring-[#0d6e5a]/40' : 'bg-slate-100'}`}>
+    <span className="block text-xs text-slate-700 leading-tight">{label}</span>
+    <span className="block mt-0.5 text-[15px] font-bold text-slate-900">{value}</span>
+    {note && <span className="block text-[11px] font-semibold text-[#0d6e5a]">{note}</span>}
   </div>
 );
 
@@ -447,7 +466,8 @@ const ResultsPanel: React.FC<{
   existing: { st?: number | null; slp?: number | null; cop?: number | null; sco?: number | null };
   zona: string;
   percInZona: number;
-}> = ({ property, result, isAttivo, existing, zona, percInZona }) => {
+  height: number;
+}> = ({ property, result, isAttivo, existing, zona, percInZona, height }) => {
   const d = result.status === 'valid' ? result.demolizione : undefined;
   const m = result.status === 'valid' ? result.mantenimento : undefined;
   const config = result.zonaConfig;
@@ -458,14 +478,14 @@ const ResultsPanel: React.FC<{
 
   return (
     <>
-      <div className="flex-none px-3.5 pt-3.5 pb-2.5 border-b border-slate-100">
+      <div className="flex-none px-4 pt-4 pb-3 border-b border-slate-200">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-[15px] font-bold text-slate-900">Cosa puoi fare</h2>
-          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-semibold text-slate-600">
+          <h2 className="text-lg font-bold text-slate-900">Il risultato</h2>
+          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-xs font-semibold text-slate-800">
             Zona {zona}
           </span>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-700">
           <span>{property.categoryLabel}</span>
           <span aria-hidden="true">·</span>
           <span className={isAttivo ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}>
@@ -474,7 +494,7 @@ const ResultsPanel: React.FC<{
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3.5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {result.status !== 'valid' && (
           <div className="p-3 rounded-lg bg-amber-50 text-amber-900 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 flex-none mt-0.5 text-amber-600" />
@@ -504,20 +524,23 @@ const ResultsPanel: React.FC<{
         {d && (
           <>
             <section className="rounded-xl bg-[#0d6e5a] text-white p-3.5">
-              <span className="block text-[11px] font-medium text-emerald-100">
-                {d.isCommerciale ? 'SLP realizzabile' : 'Volume realizzabile'}
-              </span>
+              <span className="block text-[13px] font-semibold text-white">Coperto realizzabile</span>
               <span className="block text-3xl font-extrabold tracking-tight leading-tight">
-                {d.isCommerciale ? `${formatNumber(d.slpProgetto)} m²` : `${formatNumber(d.volFinale)} m³`}
+                {formatNumber(d.covEff)} m²
               </span>
-              {!d.isCommerciale && (
-                <span className="block text-sm font-semibold">SLP massima {formatNumber(d.slpProgetto)} m²</span>
-              )}
-              <span className="mt-2 block text-[11px] text-emerald-50">
+              <span className="block text-sm font-semibold">
+                Massimo {formatNumber(d.covMax)} m² · SLP massima {formatNumber(d.slpProgetto)} m²
+              </span>
+              <span className="mt-2 block text-xs font-medium text-white">
                 {d.procedura}
                 {d.pctPremialita > 0 && ` · premialità +${d.pctPremialita}% inclusa`}
                 {d.lr14Applicata && ' · L.R. 14/2019'}
               </span>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="domina-section-title">Il lotto con questo progetto</h3>
+              <DemolitionLegend result={d} height={height} />
             </section>
 
             <section className="space-y-1.5">
@@ -538,9 +561,9 @@ const ResultsPanel: React.FC<{
               </div>
             </section>
 
-            <section className="space-y-1.5">
-              <h3 className="domina-section-title">Limiti del lotto</h3>
-              <div className="grid grid-cols-2 gap-2">
+            <details className="domina-details">
+              <summary>Limiti del lotto</summary>
+              <div className="pt-2 grid grid-cols-2 gap-2">
                 <Tile label="Superficie fondiaria" value={`${formatNumber(d.sf)} m²`} />
                 <Tile
                   label={`Cessione (${config ? percent(config.cessionePercSt) : ''} del lotto)`}
@@ -555,20 +578,19 @@ const ResultsPanel: React.FC<{
                   value={`${formatNumber(d.permMin)} m²`}
                 />
               </div>
-            </section>
+              <p className="pt-2 text-xs leading-snug text-slate-700">
+                <strong className="font-semibold text-slate-900">Cessione:</strong> {d.notaCessione}
+              </p>
+            </details>
 
-            <section className="space-y-1.5">
-              <h3 className="domina-section-title">Distanze minime</h3>
-              <div className="grid grid-cols-3 gap-2">
+            <details className="domina-details">
+              <summary>Distanze minime</summary>
+              <div className="pt-2 grid grid-cols-3 gap-2">
                 <Tile label="Confini" value={d.distanze.dc !== null ? `${String(d.distanze.dc).replace('.', ',')} m` : '—'} />
                 <Tile label="Edifici" value={`${d.distanze.df} m`} />
                 <Tile label="Strade" value={`${d.distanze.ds} m`} />
               </div>
-            </section>
-
-            <p className="text-[11px] leading-snug text-slate-500">
-              <strong className="font-semibold text-slate-600">Cessione:</strong> {d.notaCessione}
-            </p>
+            </details>
           </>
         )}
 
@@ -592,24 +614,24 @@ const ResultsPanel: React.FC<{
         )}
 
         {d && (
-          <section className="space-y-1.5">
-            <h3 className="domina-section-title">Oggi sul lotto</h3>
-            <div className="grid grid-cols-3 gap-2">
+          <details className="domina-details">
+            <summary>Oggi sul lotto</summary>
+            <div className="pt-2 grid grid-cols-3 gap-2">
               <Tile label="Lotto" value={`${formatNumber(existing.st)} m²`} />
               <Tile label="Coperto" value={existing.cop !== null && existing.cop !== undefined ? `${formatNumber(existing.cop)} m²` : '—'} />
               <Tile label="Scoperto" value={existing.sco !== null && existing.sco !== undefined ? `${formatNumber(existing.sco)} m²` : '—'} />
             </div>
             {property.lotBoundary && (
-              <p className="text-[11px] leading-snug text-slate-600">
-                <span className="font-semibold text-slate-800">Catasto:</span>{' '}
+              <p className="pt-2 text-xs leading-snug text-slate-700">
+                <span className="font-semibold text-slate-900">Catasto:</span>{' '}
                 {formatParcelList(property.lotBoundary.parcels)} · {formatNumber(property.lotBoundary.areaSqm)} m² dal
                 disegno catastale
               </p>
             )}
-          </section>
+          </details>
         )}
 
-        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-slate-500">
+        <p className="flex items-start gap-1.5 text-xs leading-snug text-slate-600">
           <Info className="w-3 h-3 flex-none mt-px" />
           <span>Simulazione preliminare: non sostituisce la verifica del tecnico e degli strumenti urbanistici vigenti.</span>
         </p>
