@@ -1,8 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import type { Property } from '../types/property';
+import type { CadastralParcel, Property } from '../types/property';
 import { calculateUrbanParameters } from '../utils/urbanCalculationEngine';
 import { formatNumber, getLotData } from '../utils/urbanLot';
+import { CATASTO_ATTRIBUTION, CATASTO_WMS_URL } from '../utils/cadastre';
+
+/** Scelta delle particelle in Admin: la mappa mostra il catasto e passa i clic. */
+export interface ParcelPickingState {
+  center: [number, number];
+  selected: CadastralParcel[];
+  onPick: (lat: number, lng: number) => void;
+}
 
 interface MapViewProps {
   properties: Property[];
@@ -11,7 +19,25 @@ interface MapViewProps {
   onSelectProperty: (property: Property) => void;
   onOpenUnlockModal: (count: number) => void;
   onMapClickAddLocation?: (lat: number, lng: number) => void;
+  parcelPicking?: ParcelPickingState | null;
 }
+
+// Il catasto non offre la proiezione della mappa web: si chiedono le immagini in gradi
+const CATASTO_CRS = L.Util.extend({}, L.CRS.EPSG4326, { code: 'EPSG:4258' }) as L.CRS;
+const LOT_OUTLINE_STYLE: L.PathOptions = {
+  color: '#fbbf24',
+  weight: 3,
+  fillColor: '#fbbf24',
+  fillOpacity: 0.12,
+  interactive: false,
+};
+const PICKED_PARCEL_STYLE: L.PathOptions = {
+  color: '#f59e0b',
+  weight: 2,
+  fillColor: '#f59e0b',
+  fillOpacity: 0.4,
+  interactive: false,
+};
 
 const PADOVA_CENTER: [number, number] = [45.4075, 11.879];
 const INITIAL_ZOOM = 13;
@@ -29,12 +55,19 @@ export const MapView: React.FC<MapViewProps> = ({
   onSelectProperty,
   onOpenUnlockModal,
   onMapClickAddLocation,
+  parcelPicking = null,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const reservedMarkerRef = useRef<L.Marker | null>(null);
   const previousViewRef = useRef<{ center: L.LatLng; zoom: number } | null>(null);
+  const pickHandlerRef = useRef<ParcelPickingState['onPick'] | null>(null);
+  const isPicking = parcelPicking !== null;
+  const onPick = parcelPicking?.onPick ?? null;
+  useEffect(() => {
+    pickHandlerRef.current = onPick;
+  }, [onPick]);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -61,6 +94,10 @@ export const MapView: React.FC<MapViewProps> = ({
 
     // Admin map click to add location
     map.on('click', (e: L.LeafletMouseEvent) => {
+      if (pickHandlerRef.current) {
+        pickHandlerRef.current(e.latlng.lat, e.latlng.lng);
+        return;
+      }
       if (isAdmin && onMapClickAddLocation) {
         onMapClickAddLocation(e.latlng.lat, e.latlng.lng);
       }
@@ -84,6 +121,9 @@ export const MapView: React.FC<MapViewProps> = ({
     markersRef.current = {};
     reservedMarkerRef.current?.remove();
     reservedMarkerRef.current = null;
+
+    // Mentre si scelgono le particelle i pin coprirebbero proprio gli edifici da cliccare
+    if (isPicking) return;
 
     // Segregate visible vs hidden properties
     const visibleProperties = isAdmin
@@ -137,7 +177,59 @@ export const MapView: React.FC<MapViewProps> = ({
       reservedMarker.addTo(map);
       reservedMarkerRef.current = reservedMarker;
     }
-  }, [properties, selectedProperty, isAdmin, onSelectProperty, onOpenUnlockModal]);
+  }, [properties, selectedProperty, isAdmin, onSelectProperty, onOpenUnlockModal, isPicking]);
+
+  // Confini del lotto dell'immobile aperto
+  const selectedOutline = selectedProperty?.lotBoundary?.outline;
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !selectedOutline?.length || isPicking) return;
+    const outline = L.polygon(selectedOutline, LOT_OUTLINE_STYLE).addTo(map);
+    return () => {
+      outline.remove();
+    };
+  }, [selectedOutline, isPicking]);
+
+  // Scelta delle particelle: mappa catastale sopra il satellite
+  const pickingCenter = parcelPicking?.center;
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isPicking) return;
+
+    const cadastre = L.tileLayer
+      .wms(CATASTO_WMS_URL, {
+        layers: 'CP.CadastralParcel',
+        format: 'image/png',
+        transparent: true,
+        version: '1.1.1',
+        crs: CATASTO_CRS,
+        opacity: 0.5,
+        maxZoom: 20,
+        attribution: CATASTO_ATTRIBUTION,
+      })
+      .addTo(map);
+    map.getContainer().classList.add('domina-map-picking');
+    if (pickingCenter) {
+      map.flyTo(pickingCenter, Math.max(map.getZoom(), FOCUS_ZOOM), { duration: 0.8 });
+    }
+
+    return () => {
+      cadastre.remove();
+      map.getContainer().classList.remove('domina-map-picking');
+    };
+    // La mappa si centra solo all'inizio della scelta
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPicking]);
+
+  const pickedParcels = parcelPicking?.selected;
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !pickedParcels?.length) return;
+    const layers = pickedParcels.map((parcel) => L.polygon(parcel.polygons, PICKED_PARCEL_STYLE).addTo(map));
+    return () => {
+      layers.forEach((layer) => layer.remove());
+    };
+  }, [pickedParcels]);
 
   // Lo zoom automatico avviene solo entrando e uscendo da un immobile: nella vista
   // con tutti i pin l'utente decide liberamente zoom e posizione.

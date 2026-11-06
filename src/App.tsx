@@ -1,8 +1,17 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import type { Property, PropertyCategory, LeadSubmission, ClickSource } from './types/property';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import type {
+  Property,
+  PropertyCategory,
+  LeadSubmission,
+  ClickSource,
+  CadastralParcel,
+  LotBoundary,
+} from './types/property';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
-import { MapView } from './components/MapView';
+import { MapView, type ParcelPickingState } from './components/MapView';
+import { ParcelPickerBar } from './components/ParcelPickerBar';
+import { buildLotBoundary, fetchParcelAt } from './utils/cadastre';
 import { PropertyFocusView } from './components/PropertyFocusView';
 import { UnlockModal } from './components/UnlockModal';
 import { AdminPropertyModal } from './components/AdminPropertyModal';
@@ -52,6 +61,15 @@ export const App: React.FC = () => {
   const [adminPropModalOpen, setAdminPropModalOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [adminLeadsModalOpen, setAdminLeadsModalOpen] = useState(false);
+
+  // Scelta delle particelle catastali (Admin): il modulo resta aperto ma nascosto
+  const [parcelPicker, setParcelPicker] = useState<{
+    center: [number, number];
+    selected: CadastralParcel[];
+    pending: number; // ricerche ancora in corso: il catasto può impiegare 20 secondi
+    message: string | null;
+  } | null>(null);
+  const parcelConfirmRef = useRef<((boundary: LotBoundary | null) => void) | null>(null);
 
   // Check URL on load for /admin or #admin
   useEffect(() => {
@@ -285,6 +303,65 @@ export const App: React.FC = () => {
     setSelectedProperty(null);
   }, []);
 
+  const handleStartParcelPicking = useCallback(
+    (
+      current: LotBoundary | null,
+      center: [number, number],
+      onConfirm: (boundary: LotBoundary | null) => void
+    ) => {
+      parcelConfirmRef.current = onConfirm;
+      setParcelPicker({ center, selected: current?.parcels ?? [], pending: 0, message: null });
+    },
+    []
+  );
+
+  // Un clic aggiunge la particella sotto il puntatore, un secondo clic la toglie
+  const handlePickParcel = useCallback(async (lat: number, lng: number) => {
+    setParcelPicker((prev) => (prev ? { ...prev, pending: prev.pending + 1, message: null } : prev));
+    try {
+      const parcel = await fetchParcelAt(lat, lng);
+      setParcelPicker((prev) => {
+        if (!prev) return prev;
+        const pending = Math.max(0, prev.pending - 1);
+        if (!parcel) {
+          return { ...prev, pending, message: 'Qui non c’è una particella: strade e acque non lo sono.' };
+        }
+        const already = prev.selected.some((p) => p.id === parcel.id);
+        return {
+          ...prev,
+          pending,
+          selected: already ? prev.selected.filter((p) => p.id !== parcel.id) : [...prev.selected, parcel],
+        };
+      });
+    } catch (error) {
+      setParcelPicker((prev) =>
+        prev
+          ? {
+              ...prev,
+              pending: Math.max(0, prev.pending - 1),
+              message: error instanceof Error ? error.message : 'Catasto non raggiungibile',
+            }
+          : prev
+      );
+    }
+  }, []);
+
+  const handleFinishParcelPicking = (confirm: boolean) => {
+    if (confirm && parcelPicker) {
+      parcelConfirmRef.current?.(parcelPicker.selected.length ? buildLotBoundary(parcelPicker.selected) : null);
+    }
+    parcelConfirmRef.current = null;
+    setParcelPicker(null);
+  };
+
+  const parcelPicking: ParcelPickingState | null = useMemo(
+    () =>
+      parcelPicker
+        ? { center: parcelPicker.center, selected: parcelPicker.selected, onPick: handlePickParcel }
+        : null,
+    [parcelPicker, handlePickParcel]
+  );
+
   const handleMapClickAddLocation = (_lat: number, _lng: number) => {
     setEditingProperty(null);
     setAdminPropModalOpen(true);
@@ -329,13 +406,24 @@ export const App: React.FC = () => {
           onSelectProperty={handleSelectProperty}
           onOpenUnlockModal={handleOpenClusterUnlock}
           onMapClickAddLocation={handleMapClickAddLocation}
+          parcelPicking={parcelPicking}
         />
 
-        {!selectedProperty && !hasSelectedOnce && (
+        {!selectedProperty && !hasSelectedOnce && !parcelPicker && (
           <p className="domina-map-hint">Clicca un pin per scoprire cosa puoi costruire</p>
         )}
 
-        {selectedProperty && (
+        {parcelPicker && (
+          <ParcelPickerBar
+            selected={parcelPicker.selected}
+            pending={parcelPicker.pending}
+            message={parcelPicker.message}
+            onCancel={() => handleFinishParcelPicking(false)}
+            onConfirm={() => handleFinishParcelPicking(true)}
+          />
+        )}
+
+        {selectedProperty && !parcelPicker && (
           <PropertyFocusView
             key={selectedProperty.id}
             property={selectedProperty}
@@ -376,6 +464,8 @@ export const App: React.FC = () => {
         property={editingProperty}
         onSave={handleSaveProperty}
         onDelete={handleDeleteProperty}
+        isHidden={parcelPicker !== null}
+        onPickParcels={handleStartParcelPicking}
       />
 
       {/* Admin Leads Modal */}

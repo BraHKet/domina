@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Trash2, MapPin, Upload, Link2, Eye, EyeOff, Activity, Building2 } from 'lucide-react';
-import type { Property, PropertyCategory, ActivityStatus, ValueSourceType } from '../types/property';
+import { X, Save, Trash2, MapPin, Upload, Link2, Eye, EyeOff, Activity, Building2, Map as MapIcon } from 'lucide-react';
+import type { Property, PropertyCategory, ActivityStatus, ValueSourceType, LotBoundary } from '../types/property';
+import { formatParcelList } from '../utils/cadastre';
+import { formatNumber } from '../utils/urbanLot';
 
 interface AdminPropertyModalProps {
   property: Property | null;
@@ -8,6 +10,13 @@ interface AdminPropertyModalProps {
   onClose: () => void;
   onSave: (prop: Property) => void;
   onDelete?: (id: string) => void;
+  // Mentre si scelgono le particelle sulla mappa il modulo resta aperto ma nascosto
+  isHidden?: boolean;
+  onPickParcels?: (
+    current: LotBoundary | null,
+    center: [number, number],
+    onConfirm: (boundary: LotBoundary | null) => void
+  ) => void;
 }
 
 export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
@@ -16,6 +25,8 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
   onClose,
   onSave,
   onDelete,
+  isHidden = false,
+  onPickParcels,
 }) => {
   const isEditing = !!property;
 
@@ -52,6 +63,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
   const [sco, setSco] = useState<number | ''>('');
   const [vol, setVol] = useState<number | ''>('');
   const [fonte, setFonte] = useState<ValueSourceType>('misurato');
+  const [lotBoundary, setLotBoundary] = useState<LotBoundary | null>(null);
 
   useEffect(() => {
     if (property) {
@@ -67,6 +79,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       setIsVisibleToUser(property.isVisibleToUser !== false);
       setLat(String(property.coordinates[0]));
       setLng(String(property.coordinates[1]));
+      setLotBoundary(property.lotBoundary ?? null);
 
       if (property.businessHealth) {
         const t = property.businessHealth.revenueTrend;
@@ -122,6 +135,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
       setIsVisibleToUser(true);
       setLat('45.4075');
       setLng('11.8800');
+      setLotBoundary(null);
       setRev2023(950000);
       setMargin2023(14);
       setRev2024(990000);
@@ -240,6 +254,7 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
           vol: { source: fonte, reliability: 'media' },
         },
       },
+      lotBoundary: lotBoundary ?? undefined,
       pdfPath: property?.pdfPath || '/dossiers/domina-dossier-immobile-001.pdf',
       pdfFileName: property?.pdfFileName || 'domina-dossier-immobile-001.pdf',
       pdfSize: property?.pdfSize || '1.8 MB',
@@ -252,7 +267,9 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in ${
+        isHidden ? 'hidden' : ''
+      }`}
       role="dialog"
       aria-modal="true"
     >
@@ -580,6 +597,69 @@ export const AdminPropertyModal: React.FC<AdminPropertyModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Confini del lotto dalle particelle catastali */}
+            {onPickParcels && (
+              <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold text-gray-700 uppercase">Confini del lotto (catasto)</span>
+                  {lotBoundary && (
+                    <span className="text-[10px] font-semibold text-gray-500">
+                      {lotBoundary.parcels.length} {lotBoundary.parcels.length === 1 ? 'particella' : 'particelle'} ·{' '}
+                      {formatNumber(lotBoundary.areaSqm)} m²
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] leading-snug text-gray-600">
+                  {lotBoundary
+                    ? formatParcelList(lotBoundary.parcels)
+                    : 'Scegli sulla mappa le particelle che formano il lotto: il contorno si disegna da solo.'}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onPickParcels(
+                        lotBoundary,
+                        [parseFloat(lat) || 45.4075, parseFloat(lng) || 11.88],
+                        setLotBoundary
+                      )
+                    }
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-[10px] font-bold bg-[#0d6e5a] text-white hover:bg-[#0b5c4b]"
+                  >
+                    <MapIcon className="w-3 h-3" />
+                    {lotBoundary ? 'Modifica sulla mappa' : 'Scegli sulla mappa'}
+                  </button>
+                  {lotBoundary && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSt(lotBoundary.areaSqm);
+                          setLotAreaSqm(lotBoundary.areaSqm);
+                        }}
+                        className="px-2.5 py-1.5 rounded text-[10px] font-bold bg-[#0d6e5a]/10 text-[#0d6e5a] hover:bg-[#0d6e5a]/20"
+                        title="Copia la superficie catastale nel campo St"
+                      >
+                        Usa {formatNumber(lotBoundary.areaSqm)} m² come St
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLotBoundary(null)}
+                        className="px-2.5 py-1.5 rounded text-[10px] font-bold text-rose-700 hover:bg-rose-50"
+                      >
+                        Rimuovi
+                      </button>
+                    </>
+                  )}
+                </div>
+                {lotBoundary && st !== '' && Math.abs(Number(st) - lotBoundary.areaSqm) > Math.max(10, Number(st) * 0.05) && (
+                  <p className="text-[10px] leading-snug text-amber-700">
+                    La St inserita ({formatNumber(Number(st))} m²) differisce di oltre il 5% dalla superficie catastale.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Cop, Sco e Vol */}
             <div className="grid grid-cols-3 gap-2">

@@ -40,6 +40,26 @@ export interface UrbanLotData {
   };
 }
 
+export type LatLngPoint = [number, number]; // [lat, lng]
+// Primo anello: contorno esterno. Gli altri: eventuali buchi interni.
+export type GeoPolygon = LatLngPoint[][];
+
+export interface CadastralParcel {
+  id: string; // es. "G224_002500.327"
+  comune: string; // codice catastale del comune, es. "G224" (Padova)
+  foglio: string;
+  particella: string;
+  polygons: GeoPolygon[];
+}
+
+export interface LotBoundary {
+  parcels: CadastralParcel[];
+  outline: GeoPolygon[]; // particelle unite, senza linee interne
+  areaSqm: number; // superficie del disegno catastale, non sostituisce la St
+  source: string;
+  updatedAt: string;
+}
+
 export interface Property {
   id: string;
   name: string;
@@ -96,6 +116,9 @@ export interface Property {
 
   // Dati Urbanistici Reali del Lotto (Piano degli Interventi)
   urbanLotData?: UrbanLotData;
+
+  // Confini del lotto dalle particelle catastali (scelti in Admin)
+  lotBoundary?: LotBoundary;
 
   // Dossier PDF
   pdfPath: string;

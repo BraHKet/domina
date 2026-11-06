@@ -22,6 +22,7 @@ import {
   type PremialitaSelections,
   type UrbanCalculationOutput,
 } from '../utils/urbanCalculationEngine.ts';
+import { formatParcelList } from '../utils/cadastre';
 import { formatNumber, getLotData } from '../utils/urbanLot.ts';
 import { DemolitionPlan, ExistingPlan } from './LotPlan.tsx';
 
@@ -598,6 +599,13 @@ const ResultsPanel: React.FC<{
               <Tile label="Coperto" value={existing.cop !== null && existing.cop !== undefined ? `${formatNumber(existing.cop)} m²` : '—'} />
               <Tile label="Scoperto" value={existing.sco !== null && existing.sco !== undefined ? `${formatNumber(existing.sco)} m²` : '—'} />
             </div>
+            {property.lotBoundary && (
+              <p className="text-[11px] leading-snug text-slate-600">
+                <span className="font-semibold text-slate-800">Catasto:</span>{' '}
+                {formatParcelList(property.lotBoundary.parcels)} · {formatNumber(property.lotBoundary.areaSqm)} m² dal
+                disegno catastale
+              </p>
+            )}
           </section>
         )}
 
