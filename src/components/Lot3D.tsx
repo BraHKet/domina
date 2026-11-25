@@ -331,12 +331,12 @@ export const Lot3DPlan: React.FC<{
 };
 
 /** Le aree del progetto con gli stessi colori del disegno 3D. */
-export const DemolitionLegend: React.FC<{ result: DemolizioneResult; height: number }> = ({ result: d, height }) => (
+export const DemolitionLegend: React.FC<{ result: DemolizioneResult; height: number }> = ({ result: d }) => (
   <Legend
     items={[
       {
         color: COLORS.tetto,
-        label: `Edificio (${Math.max(1, Math.floor(height / FLOOR_HEIGHT))} piani)`,
+        label: 'Edificio',
         value: `${formatNumber(d.covEff)} m²`,
       },
       ...(d.tv > 0 ? [{ color: COLORS.tettoVerde, label: 'Tetto verde', value: `${formatNumber(d.tv)} m²` }] : []),
